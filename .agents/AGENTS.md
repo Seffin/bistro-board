@@ -3,6 +3,7 @@
 ## Workspace Boundaries
 
 - **All generated files must stay within this workspace** (`POS-Dashboard-Template/`).
+- **CRITICAL**: Do NOT write markdown artifacts (like plans, proposals, or summaries) to the default `.gemini/artifacts` or `brain` directories. Always write them to the `docs/` directory within this workspace.
 - If a file absolutely must be created or modified outside the workspace, **ask the user for explicit permission first** and explain why.
 - Never write project files to temp directories, the Desktop, home directory, or any path outside this workspace.
 
