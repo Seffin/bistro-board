@@ -6,3 +6,10 @@ venv
 scratch 
 .agents 
 *.egg-info/
+web/env
+.vscode/
+.idea/
+.DS_Store
+*.db-journal
+*.db-shm
+*.db-wal
