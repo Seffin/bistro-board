@@ -10,9 +10,27 @@ const mockActiveChannels = [
 // Friday 2026-01-16T19:45:00Z (Hour 19, Fri)
 // Sunday 2026-01-18T21:15:00Z (Hour 21, Sun)
 const mockOrders = [
-	{ channel: 'Counter', status: 'Delivered', grand_total: 200000, net_payout: 200000, order_date: new Date('2026-01-15T12:30:00Z') },
-	{ channel: 'Swiggy', status: 'Delivered', grand_total: 300000, net_payout: 270000, order_date: new Date('2026-01-16T19:45:00Z') },
-	{ channel: 'Zomato', status: 'Delivered', grand_total: 500000, net_payout: 450000, order_date: new Date('2026-01-18T21:15:00Z') }
+	{
+		channel: 'Counter',
+		status: 'Delivered',
+		grand_total: 200000,
+		net_payout: 200000,
+		order_date: new Date('2026-01-15T12:30:00Z')
+	},
+	{
+		channel: 'Swiggy',
+		status: 'Delivered',
+		grand_total: 300000,
+		net_payout: 270000,
+		order_date: new Date('2026-01-16T19:45:00Z')
+	},
+	{
+		channel: 'Zomato',
+		status: 'Delivered',
+		grand_total: 500000,
+		net_payout: 450000,
+		order_date: new Date('2026-01-18T21:15:00Z')
+	}
 ];
 
 vi.mock('$lib/server/config', () => ({
@@ -48,8 +66,18 @@ describe('Overview Velocity and Performance Aggregations', () => {
 
 		// Verify Hourly Velocity Categories (11:00 to 22:00)
 		expect(hourlyVelocity.categories).toEqual([
-			'11:00', '12:00', '13:00', '14:00', '15:00', '16:00',
-			'17:00', '18:00', '19:00', '20:00', '21:00', '22:00'
+			'11:00',
+			'12:00',
+			'13:00',
+			'14:00',
+			'15:00',
+			'16:00',
+			'17:00',
+			'18:00',
+			'19:00',
+			'20:00',
+			'21:00',
+			'22:00'
 		]);
 
 		// Verify Hourly Volume Data

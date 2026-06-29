@@ -6,7 +6,12 @@
 
 	// Build a lookup map from channel name → channel config (color, id, etc.)
 	const channelMap = $derived(
-		Object.fromEntries((page.data.channels ?? []).map((c: { name: string; color: string; id: string }) => [c.name, c]))
+		Object.fromEntries(
+			(page.data.channels ?? []).map((c: { name: string; color: string; id: string }) => [
+				c.name,
+				c
+			])
+		)
 	);
 
 	function getChannelColor(channelName: string): string {
@@ -22,7 +27,7 @@
 	<div class="header">
 		<div>
 			<h1>Recent Sales</h1>
-			<p>Showing the 50 most recent orders across all channels.</p>
+			<p>Showing the 50 most recent orders {#if page.url.searchParams.get('channel') && page.url.searchParams.get('channel') !== 'all'}for this channel{:else}across all channels{/if}.</p>
 		</div>
 		<DateRangeHeader />
 	</div>
@@ -55,14 +60,20 @@
 						</td>
 						<td>{order.order_type || 'N/A'}</td>
 						<td>
-							<span class="status-dot" class:status-success={order.status?.toLowerCase() === 'delivered' || order.status?.toLowerCase() === 'printed'}></span>
+							<span
+								class="status-dot"
+								class:status-success={order.status?.toLowerCase() === 'delivered' ||
+									order.status?.toLowerCase() === 'printed'}
+							></span>
 							{order.status || 'Unknown'}
 						</td>
 						<td class="text-right font-bold">₹{(order.grand_total || 0).toFixed(2)}</td>
 					</tr>
 				{:else}
 					<tr>
-						<td colspan="6" class="text-center text-muted" style="padding: 3rem;">No orders found.</td>
+						<td colspan="6" class="text-center text-muted" style="padding: 3rem;"
+							>No orders found.</td
+						>
 					</tr>
 				{/each}
 			</tbody>
@@ -107,7 +118,8 @@
 		text-align: left;
 	}
 
-	th, td {
+	th,
+	td {
 		padding: 1rem 1.5rem;
 		border-bottom: 1px solid var(--border-color);
 	}
@@ -129,11 +141,23 @@
 		border-bottom: none;
 	}
 
-	.font-medium { font-weight: 500; }
-	.font-bold { font-weight: 700; color: var(--text-primary); }
-	.text-right { text-align: right; }
-	.text-center { text-align: center; }
-	.text-muted { color: var(--text-secondary); font-size: 0.875rem; }
+	.font-medium {
+		font-weight: 500;
+	}
+	.font-bold {
+		font-weight: 700;
+		color: var(--text-primary);
+	}
+	.text-right {
+		text-align: right;
+	}
+	.text-center {
+		text-align: center;
+	}
+	.text-muted {
+		color: var(--text-secondary);
+		font-size: 0.875rem;
+	}
 
 	.badge {
 		display: inline-flex;

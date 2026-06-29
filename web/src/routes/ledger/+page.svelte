@@ -63,8 +63,21 @@
 		<div class="card table-card">
 			<div class="table-header-row">
 				<h3>Daily Income Breakdown</h3>
-				<a href={`/api/export/ledger${page.url.search}`} class="btn btn-outline download-btn" download>
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<a
+					href={`/api/export/ledger${page.url.search}`}
+					class="btn btn-outline download-btn"
+					download
+				>
+					<svg
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
 						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
 						<polyline points="7 10 12 15 17 10"></polyline>
 						<line x1="12" y1="15" x2="12" y2="3"></line>
@@ -114,12 +127,7 @@
 		<div class="card summary-card">
 			<h3>Channel Contribution</h3>
 			<div class="summary-grid">
-				{#each [
-					{ label: 'Counter', value: ledger.daily_breakdown.reduce((sum, d) => sum + d.counter, 0), color: '#3b82f6' },
-					{ label: 'Swiggy', value: ledger.daily_breakdown.reduce((sum, d) => sum + d.swiggy, 0), color: '#f97316' },
-					{ label: 'Zomato', value: ledger.daily_breakdown.reduce((sum, d) => sum + d.zomato, 0), color: '#e53935' },
-					{ label: 'Other', value: ledger.daily_breakdown.reduce((sum, d) => sum + d.other, 0), color: '#6b7280' }
-				] as item}
+				{#each [{ label: 'Counter', value: ledger.daily_breakdown.reduce((sum, d) => sum + d.counter, 0), color: '#3b82f6' }, { label: 'Swiggy', value: ledger.daily_breakdown.reduce((sum, d) => sum + d.swiggy, 0), color: '#f97316' }, { label: 'Zomato', value: ledger.daily_breakdown.reduce((sum, d) => sum + d.zomato, 0), color: '#e53935' }, { label: 'Other', value: ledger.daily_breakdown.reduce((sum, d) => sum + d.other, 0), color: '#6b7280' }] as item}
 					<div class="summary-item">
 						<div class="channel-header">
 							<span class="dot" style:background-color={item.color}></span>
@@ -127,7 +135,9 @@
 						</div>
 						<div class="channel-value">{formatCurrency(item.value)}</div>
 						{#if ledger.summary.total_income > 0}
-							<div class="channel-percent">{((item.value / ledger.summary.total_income) * 100).toFixed(1)}%</div>
+							<div class="channel-percent">
+								{((item.value / ledger.summary.total_income) * 100).toFixed(1)}%
+							</div>
 						{/if}
 					</div>
 				{/each}
@@ -216,7 +226,8 @@
 		text-align: left;
 	}
 
-	th, td {
+	th,
+	td {
 		padding: 1rem 1.5rem;
 		border-bottom: 1px solid var(--border-color);
 	}

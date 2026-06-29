@@ -57,14 +57,14 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		const rows = queryResults.map((o) => ({
 			'Order ID': o.order_id,
-			'Date': o.order_date,
-			'Channel': o.channel,
-			'Status': o.status,
-			'Subtotal': o.subtotal,
-			'Discount': o.discount,
-			'Tax': o.tax,
+			Date: o.order_date,
+			Channel: o.channel,
+			Status: o.status,
+			Subtotal: o.subtotal,
+			Discount: o.discount,
+			Tax: o.tax,
 			'Grand Total': o.grand_total,
-			'Commission': o.commission,
+			Commission: o.commission,
 			'Net Payout': o.net_payout,
 			'Customer Name': o.customer_name
 		}));

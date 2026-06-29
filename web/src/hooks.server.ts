@@ -27,7 +27,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 	if (!event.locals.user && !isAuthPage) {
 		// API routes return 401 instead of redirecting
 		if (event.url.pathname.startsWith('/api/')) {
-			logger.warn({ path: event.url.pathname, method: event.request.method }, 'Unauthorized API request');
+			logger.warn(
+				{ path: event.url.pathname, method: event.request.method },
+				'Unauthorized API request'
+			);
 			return new Response(JSON.stringify({ error: 'Unauthorized' }), {
 				status: 401,
 				headers: { 'Content-Type': 'application/json' }
@@ -46,13 +49,16 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	// Log request with timing (skip static assets for noise reduction)
 	if (!event.url.pathname.startsWith('/_app/') && !event.url.pathname.startsWith('/favicon')) {
-		logger.info({
-			method: event.request.method,
-			path: event.url.pathname,
-			status: response.status,
-			duration: `${duration}ms`,
-			user: event.locals.user?.username || 'anonymous'
-		}, 'request');
+		logger.info(
+			{
+				method: event.request.method,
+				path: event.url.pathname,
+				status: response.status,
+				duration: `${duration}ms`,
+				user: event.locals.user?.username || 'anonymous'
+			},
+			'request'
+		);
 	}
 
 	return response;
@@ -63,12 +69,15 @@ export const handle: Handle = async ({ event, resolve }) => {
  */
 export const handleError: HandleServerError = ({ error, event }) => {
 	const err = error as Error;
-	logger.error({
-		method: event.request.method,
-		path: event.url.pathname,
-		error: err?.message || String(error),
-		stack: err?.stack
-	}, 'Unhandled server error');
+	logger.error(
+		{
+			method: event.request.method,
+			path: event.url.pathname,
+			error: err?.message || String(error),
+			stack: err?.stack
+		},
+		'Unhandled server error'
+	);
 
 	return {
 		message: 'An unexpected error occurred. Please try again later.'

@@ -8,8 +8,11 @@ const CREDENTIAL_KEYS = ['GMAIL_USER', 'GMAIL_APP_PASSWORD', 'GOOGLE_SHEET_ID'];
 
 export const GET: RequestHandler = async () => {
 	try {
-		const settings = await db.select().from(app_settings).where(inArray(app_settings.key, CREDENTIAL_KEYS));
-		
+		const settings = await db
+			.select()
+			.from(app_settings)
+			.where(inArray(app_settings.key, CREDENTIAL_KEYS));
+
 		const credentials: Record<string, string> = {
 			GMAIL_USER: '',
 			GMAIL_APP_PASSWORD: '',
@@ -28,12 +31,13 @@ export const GET: RequestHandler = async () => {
 
 export const POST: RequestHandler = async ({ request }) => {
 	const data = await request.json();
-	
+
 	try {
 		for (const key of CREDENTIAL_KEYS) {
 			if (data[key] !== undefined) {
 				// Upsert logic for Drizzle in PostgreSQL: insert, onConflictDoUpdate
-				await db.insert(app_settings)
+				await db
+					.insert(app_settings)
 					.values({
 						key,
 						value: data[key],
@@ -48,7 +52,7 @@ export const POST: RequestHandler = async ({ request }) => {
 					});
 			}
 		}
-		
+
 		return json({ success: true, message: 'Credentials updated successfully' });
 	} catch (error: any) {
 		return json({ error: error.message }, { status: 400 });

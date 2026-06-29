@@ -6,12 +6,30 @@ const mockActiveChannels = [
 ];
 
 const mockOrdersAll = [
-	{ channel: 'Counter', status: 'Delivered', grand_total: 200000, net_payout: 200000, order_date: new Date('2026-01-15T12:30:00Z') },
-	{ channel: 'Swiggy', status: 'Delivered', grand_total: 300000, net_payout: 270000, order_date: new Date('2026-04-16T19:45:00Z') }
+	{
+		channel: 'Counter',
+		status: 'Delivered',
+		grand_total: 200000,
+		net_payout: 200000,
+		order_date: new Date('2026-01-15T12:30:00Z')
+	},
+	{
+		channel: 'Swiggy',
+		status: 'Delivered',
+		grand_total: 300000,
+		net_payout: 270000,
+		order_date: new Date('2026-04-16T19:45:00Z')
+	}
 ];
 
 const mockOrdersFiltered = [
-	{ channel: 'Swiggy', status: 'Delivered', grand_total: 300000, net_payout: 270000, order_date: new Date('2026-04-16T19:45:00Z') }
+	{
+		channel: 'Swiggy',
+		status: 'Delivered',
+		grand_total: 300000,
+		net_payout: 270000,
+		order_date: new Date('2026-04-16T19:45:00Z')
+	}
 ];
 
 vi.mock('$lib/server/config', () => ({

@@ -6,7 +6,7 @@
 	type Channel = InferSelectModel<typeof channels>;
 
 	let { initialChannels } = $props<{ initialChannels: Channel[] }>();
-	
+
 	let channelsList = $state(initialChannels);
 	let isAdding = $state(false);
 	let editingId = $state<string | null>(null);
@@ -27,7 +27,12 @@
 	}
 
 	function startEdit(channel: Channel) {
-		formData = { ...channel, email_keywords: channel.email_keywords ? JSON.parse(channel.email_keywords as string).join(', ') : '' };
+		formData = {
+			...channel,
+			email_keywords: channel.email_keywords
+				? JSON.parse(channel.email_keywords as string).join(', ')
+				: ''
+		};
 		isAdding = false;
 		editingId = channel.id;
 	}
@@ -40,10 +45,12 @@
 
 	async function saveChannel(e: Event) {
 		e.preventDefault();
-		
+
 		const payload = {
 			...formData,
-			email_keywords: formData.email_keywords ? (formData.email_keywords as string).split(',').map(s => s.trim()) : null
+			email_keywords: formData.email_keywords
+				? (formData.email_keywords as string).split(',').map((s) => s.trim())
+				: null
 		};
 
 		const url = isAdding ? '/api/channels' : `/api/channels/${editingId}`;
@@ -67,7 +74,7 @@
 
 	async function deleteChannel(id: string) {
 		if (!confirm('Are you sure you want to delete this channel?')) return;
-		
+
 		const res = await fetch(`/api/channels/${id}`, { method: 'DELETE' });
 		if (res.ok) {
 			await fetchChannels();
@@ -164,7 +171,9 @@
 							<td>{channel.is_active ? 'Yes' : 'No'}</td>
 							<td>
 								<button class="action-btn" onclick={() => startEdit(channel)}>Edit</button>
-								<button class="action-btn danger" onclick={() => deleteChannel(channel.id)}>Delete</button>
+								<button class="action-btn danger" onclick={() => deleteChannel(channel.id)}
+									>Delete</button
+								>
 							</td>
 						</tr>
 					{/each}
@@ -248,7 +257,7 @@
 		color: var(--text-secondary);
 	}
 
-	.form-group input[type="text"] {
+	.form-group input[type='text'] {
 		padding: 0.6rem;
 		border: 1px solid var(--border-color);
 		border-radius: var(--border-radius);
@@ -256,7 +265,7 @@
 		color: var(--text-primary);
 	}
 
-	.form-group input[type="color"] {
+	.form-group input[type='color'] {
 		height: 38px;
 		width: 100%;
 		cursor: pointer;
@@ -286,7 +295,8 @@
 		border-collapse: collapse;
 	}
 
-	.channels-table th, .channels-table td {
+	.channels-table th,
+	.channels-table td {
 		padding: 1rem;
 		text-align: left;
 		border-bottom: 1px solid var(--border-color);

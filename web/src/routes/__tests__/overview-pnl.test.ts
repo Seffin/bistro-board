@@ -7,8 +7,20 @@ const mockActiveChannels = [
 ];
 
 const mockOrders = [
-	{ channel: 'Counter', status: 'Delivered', grand_total: 400000, net_payout: 400000, order_date: new Date('2026-01-15T10:00:00Z') },
-	{ channel: 'Swiggy', status: 'Delivered', grand_total: 600000, net_payout: 540000, order_date: new Date('2026-02-20T11:00:00Z') }
+	{
+		channel: 'Counter',
+		status: 'Delivered',
+		grand_total: 400000,
+		net_payout: 400000,
+		order_date: new Date('2026-01-15T10:00:00Z')
+	},
+	{
+		channel: 'Swiggy',
+		status: 'Delivered',
+		grand_total: 600000,
+		net_payout: 540000,
+		order_date: new Date('2026-02-20T11:00:00Z')
+	}
 ];
 
 const mockExpenses = [

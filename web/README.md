@@ -23,35 +23,46 @@ This is the modern web frontend and serverless backend for **Bistro Board** (Phi
 ## 💻 Local Development Setup
 
 ### 1. Install Dependencies
+
 ```bash
 npm install
 ```
 
 ### 2. Configure Environment Variables
+
 This project requires a `DATABASE_URL` pointing to a Neon PostgreSQL instance. If your project is linked to Vercel, pull your environment variables locally into `.env`:
+
 ```bash
 npx vercel link
 npx vercel env pull .env
 ```
-*(Make sure a `.env` file exists in the `web/` root containing `DATABASE_URL=postgresql://...`)*
+
+_(Make sure a `.env` file exists in the `web/` root containing `DATABASE_URL=postgresql://...`)_
 
 ### 3. Push Database Schema
+
 Push the Drizzle ORM table definitions (`src/lib/server/db/schema.ts`) to your Neon Postgres instance:
+
 ```bash
 npm run db:push
 ```
 
 ### 4. Seed / Migrate Data from SQLite
+
 To populate your cloud PostgreSQL database with existing local data from the Python ingestion pipeline (`philos_sales.db`), run the one-way migration script:
+
 ```bash
 npx tsx scripts/migrate-data.ts
 ```
 
 ### 5. Start Development Server
+
 Start the Vite development server:
+
 ```bash
 npm run dev
 ```
+
 Navigate to [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
@@ -59,11 +70,13 @@ Navigate to [http://localhost:5173](http://localhost:5173) in your browser.
 ## 📦 Building & Production
 
 To create a production build of the application:
+
 ```bash
 npm run build
 ```
 
 You can preview the production build locally with:
+
 ```bash
 npm run preview
 ```

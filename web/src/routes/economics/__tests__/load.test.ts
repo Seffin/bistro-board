@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 
 /**
  * Tests for Platform Economics page load function
- * 
+ *
  * The economics page aggregates fees, commissions, and payouts by channel
  * to show margin leakage analysis.
  */
@@ -82,7 +82,8 @@ describe('Platform Economics Load Function', () => {
 			for (const channel in result) {
 				const data = result[channel];
 				data.commission_rate = (data.total_commission / data.total_gross) * 100;
-				data.leakage = ((data.total_commission + data.total_other_charges) / data.total_gross) * 100;
+				data.leakage =
+					((data.total_commission + data.total_other_charges) / data.total_gross) * 100;
 			}
 
 			expect(result).toEqual(expected);
@@ -197,8 +198,14 @@ describe('Platform Economics Load Function', () => {
 				}
 			};
 
-			const swiggyLeakage = ((channels.swiggy.total_commission + channels.swiggy.total_other_charges) / channels.swiggy.total_gross) * 100;
-			const zomatoLeakage = ((channels.zomato.total_commission + channels.zomato.total_other_charges) / channels.zomato.total_gross) * 100;
+			const swiggyLeakage =
+				((channels.swiggy.total_commission + channels.swiggy.total_other_charges) /
+					channels.swiggy.total_gross) *
+				100;
+			const zomatoLeakage =
+				((channels.zomato.total_commission + channels.zomato.total_other_charges) /
+					channels.zomato.total_gross) *
+				100;
 
 			expect(swiggyLeakage).toBeCloseTo(20); // (150 + 50) / 1000 * 100
 			expect(zomatoLeakage).toBeCloseTo(23); // (200 + 30) / 1000 * 100
@@ -325,7 +332,8 @@ describe('Platform Economics Load Function', () => {
 				total_commission: 50
 			};
 
-			const rate = channel.total_gross > 0 ? (channel.total_commission / channel.total_gross) * 100 : 0;
+			const rate =
+				channel.total_gross > 0 ? (channel.total_commission / channel.total_gross) * 100 : 0;
 			expect(rate).toBe(0);
 		});
 	});

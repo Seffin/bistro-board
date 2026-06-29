@@ -7,10 +7,34 @@ const mockActiveChannels = [
 ];
 
 const mockOrders = [
-	{ channel: 'Counter', status: 'Delivered', grand_total: 150000, net_payout: 150000, order_date: new Date('2026-01-15T10:00:00Z') },
-	{ channel: 'Swiggy', status: 'Delivered', grand_total: 250000, net_payout: 225000, order_date: new Date('2026-01-20T11:00:00Z') },
-	{ channel: 'Counter', status: 'Delivered', grand_total: 300000, net_payout: 300000, order_date: new Date('2026-02-10T12:00:00Z') },
-	{ channel: 'Zomato', status: 'Delivered', grand_total: 200000, net_payout: 180000, order_date: new Date('2026-02-15T13:00:00Z') }
+	{
+		channel: 'Counter',
+		status: 'Delivered',
+		grand_total: 150000,
+		net_payout: 150000,
+		order_date: new Date('2026-01-15T10:00:00Z')
+	},
+	{
+		channel: 'Swiggy',
+		status: 'Delivered',
+		grand_total: 250000,
+		net_payout: 225000,
+		order_date: new Date('2026-01-20T11:00:00Z')
+	},
+	{
+		channel: 'Counter',
+		status: 'Delivered',
+		grand_total: 300000,
+		net_payout: 300000,
+		order_date: new Date('2026-02-10T12:00:00Z')
+	},
+	{
+		channel: 'Zomato',
+		status: 'Delivered',
+		grand_total: 200000,
+		net_payout: 180000,
+		order_date: new Date('2026-02-15T13:00:00Z')
+	}
 ];
 
 vi.mock('$lib/server/config', () => ({

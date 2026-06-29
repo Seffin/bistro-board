@@ -48,7 +48,9 @@ export const load = async ({ url }: { url: URL }): Promise<{ economics: Economic
 			? await db
 					.select()
 					.from(orders)
-					.where(between(orders.order_date, new Date(`${start}T00:00:00Z`), new Date(`${end}T23:59:59Z`)))
+					.where(
+						between(orders.order_date, new Date(`${start}T00:00:00Z`), new Date(`${end}T23:59:59Z`))
+					)
 			: await db.select().from(orders);
 
 	// Aggregate by channel
@@ -104,25 +106,32 @@ export const load = async ({ url }: { url: URL }): Promise<{ economics: Economic
 	}
 
 	// Convert to array and calculate rates
-	const economicsChannels: ChannelEconomics[] = Object.entries(channelStats).map(([channelKey, stats]) => {
-		const channel = channelMap.get(channelKey);
-		const commissionRate = stats.total_gross > 0 ? (stats.total_commission / stats.total_gross) * 100 : 0;
-		const payoutRatio = stats.total_gross > 0 ? (stats.total_net_payout / stats.total_gross) * 100 : 0;
-		const leakageRate = stats.total_gross > 0 ? ((stats.total_commission + stats.total_other_charges) / stats.total_gross) * 100 : 0;
+	const economicsChannels: ChannelEconomics[] = Object.entries(channelStats).map(
+		([channelKey, stats]) => {
+			const channel = channelMap.get(channelKey);
+			const commissionRate =
+				stats.total_gross > 0 ? (stats.total_commission / stats.total_gross) * 100 : 0;
+			const payoutRatio =
+				stats.total_gross > 0 ? (stats.total_net_payout / stats.total_gross) * 100 : 0;
+			const leakageRate =
+				stats.total_gross > 0
+					? ((stats.total_commission + stats.total_other_charges) / stats.total_gross) * 100
+					: 0;
 
-		return {
-			channel_id: channel?.id || channelKey,
-			channel_name: channel?.name || channelKey.charAt(0).toUpperCase() + channelKey.slice(1),
-			total_gross: stats.total_gross,
-			total_commission: stats.total_commission,
-			total_other_charges: stats.total_other_charges,
-			total_net_payout: stats.total_net_payout,
-			order_count: stats.order_count,
-			commission_rate: commissionRate,
-			payout_ratio: payoutRatio,
-			leakage_rate: leakageRate
-		};
-	});
+			return {
+				channel_id: channel?.id || channelKey,
+				channel_name: channel?.name || channelKey.charAt(0).toUpperCase() + channelKey.slice(1),
+				total_gross: stats.total_gross,
+				total_commission: stats.total_commission,
+				total_other_charges: stats.total_other_charges,
+				total_net_payout: stats.total_net_payout,
+				order_count: stats.order_count,
+				commission_rate: commissionRate,
+				payout_ratio: payoutRatio,
+				leakage_rate: leakageRate
+			};
+		}
+	);
 
 	// Sort by commission rate (ascending - lower is better)
 	economicsChannels.sort((a, b) => a.commission_rate - b.commission_rate);
@@ -131,7 +140,9 @@ export const load = async ({ url }: { url: URL }): Promise<{ economics: Economic
 	const avgCommissionRate =
 		globalTotalGross > 0 ? (globalTotalCommission / globalTotalGross) * 100 : 0;
 	const avgLeakageRate =
-		globalTotalGross > 0 ? ((globalTotalCommission + globalTotalOtherCharges) / globalTotalGross) * 100 : 0;
+		globalTotalGross > 0
+			? ((globalTotalCommission + globalTotalOtherCharges) / globalTotalGross) * 100
+			: 0;
 
 	return {
 		economics: {

@@ -9,7 +9,10 @@
 
 	function chartAction(
 		node: HTMLElement,
-		{ categories, series }: { categories: string[]; series: { name: string; type: string; data: number[] }[] }
+		{
+			categories,
+			series
+		}: { categories: string[]; series: { name: string; type: string; data: number[] }[] }
 	) {
 		const baseOptions = getCommonChartOptions('light');
 		const options = {

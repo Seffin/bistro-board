@@ -25,23 +25,22 @@ export const actions = {
 		}
 
 		if (password.length < 6) {
-			return fail(400, { error: 'Password must be at least 6 characters', username, email, fullName });
+			return fail(400, {
+				error: 'Password must be at least 6 characters',
+				username,
+				email,
+				fullName
+			});
 		}
 
 		// Check if username or email exists
-		const existingUser = await db
-			.select()
-			.from(users)
-			.where(eq(users.username, username));
+		const existingUser = await db.select().from(users).where(eq(users.username, username));
 
 		if (existingUser.length > 0) {
 			return fail(400, { error: 'Username is already taken', email, fullName });
 		}
-		
-		const existingEmail = await db
-			.select()
-			.from(users)
-			.where(eq(users.email, email));
+
+		const existingEmail = await db.select().from(users).where(eq(users.email, email));
 
 		if (existingEmail.length > 0) {
 			return fail(400, { error: 'Email is already registered', username, fullName });

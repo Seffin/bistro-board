@@ -144,8 +144,21 @@
 		<div class="filters-header">
 			<h3>Filters</h3>
 			<div class="filters-actions">
-				<a href={`/api/export/orders${page.url.search}`} class="btn btn-outline download-btn" download>
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<a
+					href={`/api/export/orders${page.url.search}`}
+					class="btn btn-outline download-btn"
+					download
+				>
+					<svg
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
 						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
 						<polyline points="7 10 12 15 17 10"></polyline>
 						<line x1="12" y1="15" x2="12" y2="3"></line>
@@ -275,10 +288,7 @@
 					{/each}
 					{#if ordersData.pagination.totalPages > 5}
 						<span class="ellipsis">...</span>
-						<button
-							class="page-btn"
-							onclick={() => goToPage(ordersData.pagination.totalPages)}
-						>
+						<button class="page-btn" onclick={() => goToPage(ordersData.pagination.totalPages)}>
 							{ordersData.pagination.totalPages}
 						</button>
 					{/if}
@@ -446,7 +456,8 @@
 		text-align: left;
 	}
 
-	th, td {
+	th,
+	td {
 		padding: 1rem 1.5rem;
 		border-bottom: 1px solid var(--border-color);
 	}

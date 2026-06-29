@@ -209,9 +209,15 @@
 									</div>
 								</td>
 								<td class="text-right">{formatCurrency(channel.total_gross, '₹', true)}</td>
-								<td class="text-right text-warning">{formatCurrency(channel.total_commission, '₹', true)}</td>
-								<td class="text-right text-warning">{formatCurrency(channel.total_other_charges, '₹', true)}</td>
-								<td class="text-right font-bold">{formatCurrency(channel.total_net_payout, '₹', true)}</td>
+								<td class="text-right text-warning"
+									>{formatCurrency(channel.total_commission, '₹', true)}</td
+								>
+								<td class="text-right text-warning"
+									>{formatCurrency(channel.total_other_charges, '₹', true)}</td
+								>
+								<td class="text-right font-bold"
+									>{formatCurrency(channel.total_net_payout, '₹', true)}</td
+								>
 								<td class="text-right">
 									<span class="rate-badge" class:rate-low={channel.commission_rate < 10}>
 										{channel.commission_rate.toFixed(2)}%
@@ -322,7 +328,8 @@
 		text-align: left;
 	}
 
-	th, td {
+	th,
+	td {
 		padding: 1rem 1.5rem;
 		border-bottom: 1px solid var(--border-color);
 	}

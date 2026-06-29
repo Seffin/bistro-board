@@ -111,17 +111,13 @@
 				<div class="insight-item">
 					<h4>Average Discount Value</h4>
 					<p class="value">{formatCurrency(promo.summary.avg_discount)}</p>
-					<p class="description">
-						Per discounted order across all buckets
-					</p>
+					<p class="description">Per discounted order across all buckets</p>
 				</div>
 
 				<div class="insight-item">
 					<h4>Total Impact</h4>
 					<p class="value">{formatCurrency(promo.summary.total_discount_value)}</p>
-					<p class="description">
-						Combined discount value across all orders
-					</p>
+					<p class="description">Combined discount value across all orders</p>
 				</div>
 
 				<div class="insight-item">
@@ -133,9 +129,7 @@
 							N/A
 						{/if}
 					</p>
-					<p class="description">
-						Most frequently used discount range
-					</p>
+					<p class="description">Most frequently used discount range</p>
 				</div>
 			</div>
 		</div>
@@ -143,7 +137,8 @@
 		<div class="empty-state card">
 			<h3>No Promo Data Available</h3>
 			<p class="text-muted">
-				No discount or promotion records found for the selected date range. Try adjusting the filters.
+				No discount or promotion records found for the selected date range. Try adjusting the
+				filters.
 			</p>
 		</div>
 	{/if}
@@ -204,7 +199,8 @@
 		text-align: left;
 	}
 
-	th, td {
+	th,
+	td {
 		padding: 1rem 1.5rem;
 		border-bottom: 1px solid var(--border-color);
 	}
@@ -339,7 +335,8 @@
 			font-size: 0.85rem;
 		}
 
-		th, td {
+		th,
+		td {
 			padding: 0.75rem 1rem;
 		}
 	}

@@ -61,10 +61,7 @@ describe('Error Handling', () => {
 
 		it('should be callable with structured data', () => {
 			logger.info({ path: '/test', method: 'GET' }, 'test request');
-			expect(logger.info).toHaveBeenCalledWith(
-				{ path: '/test', method: 'GET' },
-				'test request'
-			);
+			expect(logger.info).toHaveBeenCalledWith({ path: '/test', method: 'GET' }, 'test request');
 		});
 
 		it('should log errors with details', () => {

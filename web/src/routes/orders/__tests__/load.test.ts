@@ -135,7 +135,9 @@ describe('Order Journal Load Function', () => {
 			];
 
 			const searchQuery = 'abc';
-			const filtered = orders.filter((o) => o.order_id.toLowerCase().includes(searchQuery.toLowerCase()));
+			const filtered = orders.filter((o) =>
+				o.order_id.toLowerCase().includes(searchQuery.toLowerCase())
+			);
 
 			expect(filtered).toHaveLength(1);
 			expect(filtered[0].order_id).toBe('ORD-ABC');
@@ -149,8 +151,8 @@ describe('Order Journal Load Function', () => {
 			];
 
 			const searchQuery = '';
-			const filtered = orders.filter((o) =>
-				searchQuery === '' || o.order_id.toLowerCase().includes(searchQuery.toLowerCase())
+			const filtered = orders.filter(
+				(o) => searchQuery === '' || o.order_id.toLowerCase().includes(searchQuery.toLowerCase())
 			);
 
 			expect(filtered).toHaveLength(3);
@@ -160,9 +162,24 @@ describe('Order Journal Load Function', () => {
 	describe('date range filtering', () => {
 		it('should filter orders within date range', () => {
 			const orders = [
-				{ order_id: 'ORD-001', order_date: new Date('2024-01-01'), channel: 'counter', status: 'delivered' },
-				{ order_id: 'ORD-002', order_date: new Date('2024-01-15'), channel: 'counter', status: 'delivered' },
-				{ order_id: 'ORD-003', order_date: new Date('2024-02-01'), channel: 'counter', status: 'delivered' }
+				{
+					order_id: 'ORD-001',
+					order_date: new Date('2024-01-01'),
+					channel: 'counter',
+					status: 'delivered'
+				},
+				{
+					order_id: 'ORD-002',
+					order_date: new Date('2024-01-15'),
+					channel: 'counter',
+					status: 'delivered'
+				},
+				{
+					order_id: 'ORD-003',
+					order_date: new Date('2024-02-01'),
+					channel: 'counter',
+					status: 'delivered'
+				}
 			];
 
 			const start = new Date('2024-01-01');
@@ -174,13 +191,25 @@ describe('Order Journal Load Function', () => {
 
 		it('should include boundary dates', () => {
 			const orders = [
-			{ order_id: 'ORD-001', order_date: new Date('2024-01-01'), channel: 'counter', status: 'delivered' },
-			{ order_id: 'ORD-002', order_date: new Date('2024-01-15'), channel: 'counter', status: 'delivered' }
-		];
+				{
+					order_id: 'ORD-001',
+					order_date: new Date('2024-01-01'),
+					channel: 'counter',
+					status: 'delivered'
+				},
+				{
+					order_id: 'ORD-002',
+					order_date: new Date('2024-01-15'),
+					channel: 'counter',
+					status: 'delivered'
+				}
+			];
 
-		const start = new Date('2024-01-01');
-		const end = new Date('2024-01-31');
-		const filtered = orders.filter((o) => o.order_date.getTime() >= start.getTime() && o.order_date.getTime() <= end.getTime());
+			const start = new Date('2024-01-01');
+			const end = new Date('2024-01-31');
+			const filtered = orders.filter(
+				(o) => o.order_date.getTime() >= start.getTime() && o.order_date.getTime() <= end.getTime()
+			);
 
 			expect(filtered).toHaveLength(2);
 		});

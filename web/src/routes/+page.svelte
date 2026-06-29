@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { THEME_SYSTEM_TABS } from './navigation-tabs';
 	import { page } from '$app/state';
 	import { enhance } from '$app/forms';
 	import KPICard from '$lib/components/KPICard.svelte';
@@ -16,59 +15,6 @@
 	let { data } = $props();
 	const kpis = $derived(data.kpis);
 	const charts = $derived(data.charts);
-
-	// Use URL search param ?tab=... or client-side state via Svelte 5 runes
-	let selectedTab = $state('overview'); // Always overview on this page
-
-	function selectTab(id: string) {
-		if (id === 'overview') {
-			// Stay on overview
-			selectedTab = id;
-			if (typeof window !== 'undefined') {
-				const url = new URL(window.location.href);
-				url.searchParams.set('tab', id);
-				window.history.replaceState({}, '', url);
-			}
-		} else {
-			// Navigate to specific route, preserving date range
-			if (typeof window !== 'undefined') {
-				const url = new URL(window.location.href);
-				const dateStart = url.searchParams.get('start');
-				const dateEnd = url.searchParams.get('end');
-				
-				let routePath = '/';
-				switch (id) {
-					case 'platform-economics':
-						routePath = '/economics';
-						break;
-					case 'counter-insights':
-						routePath = '/counter-insights';
-						break;
-					case 'order-journal':
-						routePath = '/orders';
-						break;
-					case 'business-ledger':
-						routePath = '/businesses';
-						break;
-					case 'reconciliation':
-						routePath = '/reconciliation';
-						break;
-					case 'payout-analytics':
-						routePath = '/payouts';
-						break;
-					case 'promo-impact':
-						routePath = '/promo';
-						break;
-				}
-				
-				// Build new URL with date range preserved
-				const newUrl = new URL(routePath, window.location.origin);
-				if (dateStart) newUrl.searchParams.set('start', dateStart);
-				if (dateEnd) newUrl.searchParams.set('end', dateEnd);
-				window.location.href = newUrl.toString();
-			}
-		}
-	}
 
 	// Dynamic channel configuration from layout data
 	const channels = $derived(page.data.channels || []);
@@ -161,7 +107,7 @@
 		<div class="sync-console card">
 			<div class="console-header">
 				<h3>Sync Status</h3>
-				<button class="close-btn" onclick={() => showLogs = false}>&times;</button>
+				<button class="close-btn" onclick={() => (showLogs = false)}>&times;</button>
 			</div>
 			<div class="console-logs">
 				{#each syncLogs as log}
@@ -172,21 +118,18 @@
 				{/if}
 			</div>
 			{#if syncMessage}
-				<div class="sync-banner {syncMessage.includes('Error') || syncMessage.includes('failed') ? 'error' : 'success'} mt-2">
+				<div
+					class="sync-banner {syncMessage.includes('Error') || syncMessage.includes('failed')
+						? 'error'
+						: 'success'} mt-2"
+				>
 					{syncMessage}
 				</div>
 			{/if}
 		</div>
 	{/if}
 
-	<!-- Theme System Tabs Navigation -->
-	<nav class="theme-tabs card">
-		{#each THEME_SYSTEM_TABS as tab}
-			<button class="tab-btn" class:active={selectedTab === tab.id} onclick={() => selectTab(tab.id)}>
-				{tab.label}
-			</button>
-		{/each}
-	</nav>
+
 
 	<!-- Main Content Area -->
 	<div class="tab-content">
@@ -206,8 +149,15 @@
 
 		<!-- Row 2: Channel-Specific KPI Cards -->
 		<div class="kpi-row-2">
-			{#each channels as channel}
-				{@const stats = kpis.channelStats[channel.name.toLowerCase()] || { grossSales: 0, orderCount: 0, aov: 0 }}
+			{#each channels.filter(c => {
+				const selected = page.url.searchParams.get('channel');
+				return !selected || selected === 'all' || selected === c.id;
+			}) as channel}
+				{@const stats = kpis.channelStats[channel.name.toLowerCase()] || {
+					grossSales: 0,
+					orderCount: 0,
+					aov: 0
+				}}
 				<KPICard
 					title={channel.name}
 					accentColor={channel.color}
@@ -223,27 +173,45 @@
 		<!-- Row 3: Revenue Trends & Channel Mix Charts -->
 		<div class="charts-row">
 			<div class="main-chart">
-				<RevenueTrendsChart categories={charts.revenueTrends.categories} series={charts.revenueTrends.series} />
+				<RevenueTrendsChart
+					categories={charts.revenueTrends.categories}
+					series={charts.revenueTrends.series}
+				/>
 			</div>
 			<div class="side-chart">
-				<ChannelMixChart categories={charts.channelMix.categories} series={charts.channelMix.series} />
+				<ChannelMixChart
+					categories={charts.channelMix.categories}
+					series={charts.channelMix.series}
+				/>
 			</div>
 		</div>
 
 		<!-- Row 4: Profit & Loss Trend & Expense Breakdown -->
 		<div class="charts-row">
 			<div class="main-chart">
-				<ProfitLossChart categories={charts.pnlTrends.categories} series={charts.pnlTrends.series} />
+				<ProfitLossChart
+					categories={charts.pnlTrends.categories}
+					series={charts.pnlTrends.series}
+				/>
 			</div>
 			<div class="side-chart">
-				<ExpenseBreakdownChart labels={charts.expenseBreakdown.labels} series={charts.expenseBreakdown.series} />
+				<ExpenseBreakdownChart
+					labels={charts.expenseBreakdown.labels}
+					series={charts.expenseBreakdown.series}
+				/>
 			</div>
 		</div>
 
 		<!-- Row 5: Hourly Velocity, Weekly Performance, Monthly Contribution -->
 		<div class="charts-grid-3">
-			<HourlyVelocityChart categories={charts.hourlyVelocity.categories} series={charts.hourlyVelocity.series} />
-			<WeeklyPerformanceChart categories={charts.weeklyPerformance.categories} series={charts.weeklyPerformance.series} />
+			<HourlyVelocityChart
+				categories={charts.hourlyVelocity.categories}
+				series={charts.hourlyVelocity.series}
+			/>
+			<WeeklyPerformanceChart
+				categories={charts.weeklyPerformance.categories}
+				series={charts.weeklyPerformance.series}
+			/>
 			<MonthlyContributionChart
 				labels={charts.monthlyContribution.labels}
 				series={charts.monthlyContribution.series}
@@ -402,9 +370,15 @@
 	}
 
 	@keyframes blink {
-		0% { opacity: 0.2; }
-		50% { opacity: 1; }
-		100% { opacity: 0.2; }
+		0% {
+			opacity: 0.2;
+		}
+		50% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0.2;
+		}
 	}
 
 	.theme-tabs {

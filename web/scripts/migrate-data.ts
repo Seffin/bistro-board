@@ -31,7 +31,7 @@ async function main() {
 		// Insert in chunks to avoid blowing up the Neon connection
 		const chunkSize = 500;
 		for (let i = 0; i < orders.length; i += chunkSize) {
-			const chunk = orders.slice(i, i + chunkSize).map(row => ({
+			const chunk = orders.slice(i, i + chunkSize).map((row) => ({
 				order_id: row.order_id,
 				channel: row.channel,
 				original_order_id: row.original_order_id,
@@ -60,21 +60,23 @@ async function main() {
 		const payments = sqlite.prepare('SELECT * FROM order_payments').all();
 		console.log(`Found ${payments.length} order_payments. Migrating...`);
 		for (let i = 0; i < payments.length; i += chunkSize) {
-			const chunk = payments.slice(i, i + chunkSize).map(row => ({
+			const chunk = payments.slice(i, i + chunkSize).map((row) => ({
 				payment_id: row.payment_id,
 				order_id: row.order_id,
 				payment_type: row.payment_type,
 				amount: row.amount
 			}));
 			await db.insert(schema.order_payments).values(chunk).onConflictDoNothing();
-			console.log(`Migrated order_payments: ${Math.min(i + chunkSize, payments.length)} / ${payments.length}`);
+			console.log(
+				`Migrated order_payments: ${Math.min(i + chunkSize, payments.length)} / ${payments.length}`
+			);
 		}
 
 		console.log('Fetching expenses from SQLite...');
 		const expensesData = sqlite.prepare('SELECT * FROM expenses').all();
 		console.log(`Found ${expensesData.length} expenses. Migrating...`);
 		for (let i = 0; i < expensesData.length; i += chunkSize) {
-			const chunk = expensesData.slice(i, i + chunkSize).map(row => ({
+			const chunk = expensesData.slice(i, i + chunkSize).map((row) => ({
 				id: row.id,
 				year: row.year,
 				month: row.month,
@@ -91,14 +93,16 @@ async function main() {
 				remarks: row.remarks
 			}));
 			await db.insert(schema.expenses).values(chunk).onConflictDoNothing();
-			console.log(`Migrated expenses: ${Math.min(i + chunkSize, expensesData.length)} / ${expensesData.length}`);
+			console.log(
+				`Migrated expenses: ${Math.min(i + chunkSize, expensesData.length)} / ${expensesData.length}`
+			);
 		}
 
 		console.log('Fetching income_register from SQLite...');
 		const incomeData = sqlite.prepare('SELECT * FROM income_register').all();
 		console.log(`Found ${incomeData.length} income_register rows. Migrating...`);
 		for (let i = 0; i < incomeData.length; i += chunkSize) {
-			const chunk = incomeData.slice(i, i + chunkSize).map(row => ({
+			const chunk = incomeData.slice(i, i + chunkSize).map((row) => ({
 				sl: row.sl,
 				month: row.month,
 				date: row.date,
@@ -118,7 +122,9 @@ async function main() {
 				cash: row.cash
 			}));
 			await db.insert(schema.income_register).values(chunk).onConflictDoNothing();
-			console.log(`Migrated income_register: ${Math.min(i + chunkSize, incomeData.length)} / ${incomeData.length}`);
+			console.log(
+				`Migrated income_register: ${Math.min(i + chunkSize, incomeData.length)} / ${incomeData.length}`
+			);
 		}
 
 		console.log('Migration completed successfully!');

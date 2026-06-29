@@ -8,18 +8,30 @@ export function formatCurrency(value: number, symbol = '₹', compact = false): 
 	if (compact) {
 		const absVal = Math.abs(value);
 		if (absVal >= 10000000) {
-			const cr = (value / 10000000).toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1');
+			const cr = (value / 10000000)
+				.toFixed(2)
+				.replace(/\.00$/, '')
+				.replace(/(\.\d)0$/, '$1');
 			return `${symbol}${cr} Cr`;
 		}
 		if (absVal >= 100000) {
-			const l = (value / 100000).toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1');
+			const l = (value / 100000)
+				.toFixed(2)
+				.replace(/\.00$/, '')
+				.replace(/(\.\d)0$/, '$1');
 			return `${symbol}${l} L`;
 		}
 		if (absVal >= 1000) {
-			const k = (value / 1000).toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1');
+			const k = (value / 1000)
+				.toFixed(2)
+				.replace(/\.00$/, '')
+				.replace(/(\.\d)0$/, '$1');
 			return `${symbol}${k} K`;
 		}
-		return `${symbol}${value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')}`;
+		return `${symbol}${value
+			.toFixed(2)
+			.replace(/\.00$/, '')
+			.replace(/(\.\d)0$/, '$1')}`;
 	}
 
 	const formatter = new Intl.NumberFormat('en-IN', {

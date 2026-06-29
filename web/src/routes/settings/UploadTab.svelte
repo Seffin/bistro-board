@@ -5,7 +5,7 @@
 	type Channel = InferSelectModel<typeof channels>;
 
 	let { channelsList } = $props<{ channelsList: Channel[] }>();
-	
+
 	let selectedChannel = $state<string>('');
 	let fileInput = $state<HTMLInputElement | null>(null);
 	let file = $state<File | null>(null);
@@ -46,7 +46,7 @@
 			if (res.ok) {
 				uploadStatus = 'success';
 				statusMessage = 'File uploaded successfully! Triggering import...';
-				
+
 				// Reset file input
 				if (fileInput) fileInput.value = '';
 				file = null;
@@ -89,19 +89,23 @@
 			<div class="form-group">
 				<label for="file-upload">Excel Report (.xlsx, .xls)</label>
 				<div class="file-input-wrapper">
-					<input 
-						type="file" 
-						id="file-upload" 
-						accept=".xlsx, .xls" 
+					<input
+						type="file"
+						id="file-upload"
+						accept=".xlsx, .xls"
 						bind:this={fileInput}
 						onchange={handleFileChange}
-						required 
+						required
 					/>
 				</div>
 			</div>
 
 			<div class="form-actions">
-				<button type="submit" class="btn primary" disabled={uploadStatus === 'uploading' || !selectedChannel || !file}>
+				<button
+					type="submit"
+					class="btn primary"
+					disabled={uploadStatus === 'uploading' || !selectedChannel || !file}
+				>
 					{uploadStatus === 'uploading' ? 'Uploading...' : 'Upload & Import'}
 				</button>
 			</div>
@@ -144,7 +148,8 @@
 		color: var(--text-secondary);
 	}
 
-	select, input[type="file"] {
+	select,
+	input[type='file'] {
 		padding: 0.75rem;
 		border: 1px solid var(--border-color);
 		border-radius: var(--border-radius);

@@ -113,11 +113,7 @@
 		<div class="card summary-card">
 			<h3>Channel Totals</h3>
 			<div class="summary-grid">
-				{#each [
-					{ label: 'Counter', value: payouts.weekly_payouts.reduce((sum, p) => sum + p.counter, 0), color: '#3b82f6' },
-					{ label: 'Swiggy', value: payouts.weekly_payouts.reduce((sum, p) => sum + p.swiggy, 0), color: '#f97316' },
-					{ label: 'Zomato', value: payouts.weekly_payouts.reduce((sum, p) => sum + p.zomato, 0), color: '#e53935' }
-				] as channel}
+				{#each [{ label: 'Counter', value: payouts.weekly_payouts.reduce((sum, p) => sum + p.counter, 0), color: '#3b82f6' }, { label: 'Swiggy', value: payouts.weekly_payouts.reduce((sum, p) => sum + p.swiggy, 0), color: '#f97316' }, { label: 'Zomato', value: payouts.weekly_payouts.reduce((sum, p) => sum + p.zomato, 0), color: '#e53935' }] as channel}
 					<div class="summary-item">
 						<div class="channel-header">
 							<span class="dot" style:background-color={channel.color}></span>
@@ -125,7 +121,9 @@
 						</div>
 						<div class="channel-value">{formatCurrency(channel.value)}</div>
 						{#if payouts.summary.total_payout > 0}
-							<div class="channel-percent">{((channel.value / payouts.summary.total_payout) * 100).toFixed(1)}%</div>
+							<div class="channel-percent">
+								{((channel.value / payouts.summary.total_payout) * 100).toFixed(1)}%
+							</div>
 						{/if}
 					</div>
 				{/each}
@@ -196,7 +194,8 @@
 		text-align: left;
 	}
 
-	th, td {
+	th,
+	td {
 		padding: 1rem 1.5rem;
 		border-bottom: 1px solid var(--border-color);
 	}
@@ -360,7 +359,8 @@
 			font-size: 0.85rem;
 		}
 
-		th, td {
+		th,
+		td {
 			padding: 0.75rem 1rem;
 		}
 	}

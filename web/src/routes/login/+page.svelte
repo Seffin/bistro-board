@@ -15,7 +15,15 @@
 			<div class="logo-mark">
 				<svg width="32" height="32" viewBox="0 0 32 32" fill="none">
 					<rect width="32" height="32" rx="8" fill="var(--accent-primary)" />
-					<text x="16" y="22" text-anchor="middle" fill="white" font-size="18" font-weight="700" font-family="Inter, sans-serif">B</text>
+					<text
+						x="16"
+						y="22"
+						text-anchor="middle"
+						fill="white"
+						font-size="18"
+						font-weight="700"
+						font-family="Inter, sans-serif">B</text
+					>
 				</svg>
 			</div>
 			<h1>Bistro Board</h1>
@@ -26,7 +34,15 @@
 			<div class="error-alert">
 				<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
 					<circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" />
-					<line x1="8" y1="5" x2="8" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+					<line
+						x1="8"
+						y1="5"
+						x2="8"
+						y2="9"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+					/>
 					<circle cx="8" cy="11.5" r="0.75" fill="currentColor" />
 				</svg>
 				{form.error}
@@ -78,7 +94,7 @@
 					Sign In
 				{/if}
 			</button>
-			
+
 			<div class="auth-footer">
 				Don't have an account? <a href="/register">Sign up</a>
 			</div>
@@ -157,11 +173,22 @@
 	}
 
 	@keyframes shake {
-		0%, 100% { transform: translateX(0); }
-		20% { transform: translateX(-4px); }
-		40% { transform: translateX(4px); }
-		60% { transform: translateX(-2px); }
-		80% { transform: translateX(2px); }
+		0%,
+		100% {
+			transform: translateX(0);
+		}
+		20% {
+			transform: translateX(-4px);
+		}
+		40% {
+			transform: translateX(4px);
+		}
+		60% {
+			transform: translateX(-2px);
+		}
+		80% {
+			transform: translateX(2px);
+		}
 	}
 
 	.form-group {
@@ -234,7 +261,9 @@
 	}
 
 	@keyframes spin {
-		to { transform: rotate(360deg); }
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	.auth-footer {

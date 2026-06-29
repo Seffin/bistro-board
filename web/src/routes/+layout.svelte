@@ -4,9 +4,16 @@
 	import Toast from '$lib/components/Toast.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import UserDropdown from '$lib/components/UserDropdown.svelte';
+	import TabBar from '$lib/components/navigation/TabBar.svelte';
 	let { children, data } = $props();
 
 	let isAuthPage = $derived(page.url.pathname === '/login' || page.url.pathname === '/register');
+
+	function getChannelUrl(channelId: string) {
+		const searchParams = new URLSearchParams(page.url.searchParams);
+		searchParams.set('channel', channelId);
+		return `/sales?${searchParams.toString()}`;
+	}
 </script>
 
 <svelte:head>
@@ -29,15 +36,16 @@
 			<nav>
 				<a href="/" class="nav-item" class:active={page.url.pathname === '/'}>Dashboard</a>
 				<a href="/sales" class="nav-item" class:active={page.url.pathname === '/sales'}>Sales</a>
-				<a href="/businesses" class="nav-item" class:active={page.url.pathname === '/businesses'}>Businesses</a>
+				<a href="/businesses" class="nav-item" class:active={page.url.pathname === '/businesses'}
+					>Businesses</a
+				>
 
 				{#if data.channels && data.channels.length > 0}
 					<div class="nav-section-label">Channels</div>
 					{#each data.channels as channel}
 						<a
-							href="/sales?channel={channel.id}"
+							href={getChannelUrl(channel.id)}
 							class="nav-item channel-item"
-							class:active={page.url.searchParams.get('channel') === channel.id}
 						>
 							<span class="channel-dot" style:background-color={channel.color}></span>
 							{channel.name}
@@ -46,22 +54,38 @@
 				{/if}
 
 				<div class="nav-section-label">System</div>
-				<a href="/settings" class="nav-item" class:active={page.url.pathname === ('/settings' as string)}>Settings</a>
+				<a
+					href="/settings"
+					class="nav-item"
+					class:active={page.url.pathname === ('/settings' as string)}>Settings</a
+				>
 			</nav>
 		</aside>
 
 		<!-- Main Content -->
 		<main class="main-content">
 			<header class="top-header card">
-				<div class="search-bar">
-					<input type="text" placeholder="Search..." />
+				<div class="header-left">
+					<TabBar
+						tabs={[
+							{ label: 'Overview', href: '/' },
+							{ label: 'Platform Economics', href: '/economics' },
+							{ label: 'Counter Insights', href: '/counter-insights' },
+							{ label: 'Order Journal', href: '/orders' },
+							{ label: 'Business Ledger', href: '/ledger' },
+							{ label: 'Reconciliation', href: '/reconciliation' },
+							{ label: 'Payout Analytics', href: '/payouts' },
+							{ label: 'Promo Impact', href: '/promo' }
+						]}
+						currentPath={page.url.pathname}
+					/>
 				</div>
 				<div class="header-actions">
 					<ThemeToggle />
 					<UserDropdown user={data.user} />
 				</div>
 			</header>
-			
+
 			<div class="page-content">
 				{@render children()}
 			</div>
@@ -154,7 +178,7 @@
 		height: 8px;
 		border-radius: 50%;
 		flex-shrink: 0;
-		box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
+		box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
 	}
 
 	.main-content {
@@ -171,13 +195,11 @@
 		align-items: center;
 		padding: 1rem 2rem;
 		border-radius: 0;
-		border-top: none;
-		border-left: none;
-		border-right: none;
+		border: none;
 		background: var(--bg-surface);
 		position: sticky;
 		top: 0;
-		z-index: 10;
+		z-index: 20;
 		box-shadow: var(--shadow-sm);
 	}
 
@@ -197,12 +219,12 @@
 		font-size: 0.875rem;
 		transition: all var(--transition-fast);
 	}
-    
-    .search-bar input:focus {
-        border-color: var(--accent-primary);
+
+	.search-bar input:focus {
+		border-color: var(--accent-primary);
 		box-shadow: 0 0 0 3px var(--accent-light);
 		background: var(--bg-surface);
-    }
+	}
 
 	.header-actions {
 		display: flex;

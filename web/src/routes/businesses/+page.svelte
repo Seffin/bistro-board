@@ -6,7 +6,9 @@
 
 	// Build a lookup from channel ID → channel config
 	const channelMap = $derived(
-		Object.fromEntries((page.data.channels ?? []).map((c: { id: string; name: string; color: string }) => [c.id, c]))
+		Object.fromEntries(
+			(page.data.channels ?? []).map((c: { id: string; name: string; color: string }) => [c.id, c])
+		)
 	);
 
 	// Channel display names for income register columns (fallback to default if not in config)
@@ -50,12 +52,16 @@
 						<td class="text-right">₹{(entry.swiggy_payout || 0).toFixed(2)}</td>
 						<td class="text-right">₹{(entry.zomato_payout || 0).toFixed(2)}</td>
 						<td class="text-right">₹{(entry.cash || 0).toFixed(2)}</td>
-						<td class="text-right text-muted">₹{((entry.fed_bank || 0) + (entry.yes_bank || 0)).toFixed(2)}</td>
+						<td class="text-right text-muted"
+							>₹{((entry.fed_bank || 0) + (entry.yes_bank || 0)).toFixed(2)}</td
+						>
 						<td class="text-right font-bold highlight">₹{(entry.total_income || 0).toFixed(2)}</td>
 					</tr>
 				{:else}
 					<tr>
-						<td colspan="7" class="text-center text-muted" style="padding: 3rem;">No ledger entries found.</td>
+						<td colspan="7" class="text-center text-muted" style="padding: 3rem;"
+							>No ledger entries found.</td
+						>
 					</tr>
 				{/each}
 			</tbody>
@@ -100,7 +106,8 @@
 		text-align: left;
 	}
 
-	th, td {
+	th,
+	td {
 		padding: 1rem 1.5rem;
 		border-bottom: 1px solid var(--border-color);
 	}
@@ -122,17 +129,29 @@
 		border-bottom: none;
 	}
 
-	.font-medium { font-weight: 500; }
-	.font-bold { font-weight: 700; color: var(--text-primary); }
-	.text-right { text-align: right; }
-	.text-center { text-align: center; }
-	.text-muted { color: var(--text-secondary); font-size: 0.875rem; }
-	
+	.font-medium {
+		font-weight: 500;
+	}
+	.font-bold {
+		font-weight: 700;
+		color: var(--text-primary);
+	}
+	.text-right {
+		text-align: right;
+	}
+	.text-center {
+		text-align: center;
+	}
+	.text-muted {
+		color: var(--text-secondary);
+		font-size: 0.875rem;
+	}
+
 	.highlight {
 		background-color: rgba(72, 187, 120, 0.05);
 		color: #48bb78;
 	}
-	
+
 	:global([data-theme='dark']) .highlight {
 		background-color: rgba(72, 187, 120, 0.1);
 	}

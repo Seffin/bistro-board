@@ -37,7 +37,11 @@ export const load = async ({ url }: { url: URL }): Promise<{ insights: CounterIn
 					.where(
 						and(
 							eq(orders.channel, 'counter'),
-							between(orders.order_date, new Date(`${start}T00:00:00Z`), new Date(`${end}T23:59:59Z`))
+							between(
+								orders.order_date,
+								new Date(`${start}T00:00:00Z`),
+								new Date(`${end}T23:59:59Z`)
+							)
 						)
 					)
 			: await db.select().from(orders).where(eq(orders.channel, 'counter'));
@@ -91,7 +95,12 @@ export const load = async ({ url }: { url: URL }): Promise<{ insights: CounterIn
 				count: order_payments.payment_id
 			})
 			.from(order_payments)
-			.where(inArray(order_payments.order_id, validOrders.map((o) => o.order_id)));
+			.where(
+				inArray(
+					order_payments.order_id,
+					validOrders.map((o) => o.order_id)
+				)
+			);
 	}
 
 	// Aggregate payment methods

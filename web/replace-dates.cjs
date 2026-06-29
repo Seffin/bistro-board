@@ -25,22 +25,29 @@ for (const relPath of files) {
 
 	// Add import
 	if (!content.includes('parseDateRange')) {
-		content = content.replace(/(import .*;\r?\n)+/, `$&import { parseDateRange } from '$lib/utils/date-filter';\n`);
+		content = content.replace(
+			/(import .*;\r?\n)+/,
+			`$&import { parseDateRange } from '$lib/utils/date-filter';\n`
+		);
 	}
 
 	// Replace URL params extraction
-	content = content.replace(/const start = url\.(?:searchParams\.get\('start'\)|searchParams\?.get\('start'\));\r?\n\s*const end = url\.(?:searchParams\.get\('end'\)|searchParams\?.get\('end'\));/g, 
-		`const { start, end } = parseDateRange(url);`);
-		
+	content = content.replace(
+		/const start = url\.(?:searchParams\.get\('start'\)|searchParams\?.get\('start'\));\r?\n\s*const end = url\.(?:searchParams\.get\('end'\)|searchParams\?.get\('end'\));/g,
+		`const { start, end } = parseDateRange(url);`
+	);
+
 	// Replace the dashboard specific extraction
-	content = content.replace(/const start = url \? url\.searchParams\.get\('start'\) : null;\r?\n\s*const end = url \? url\.searchParams\.get\('end'\) : null;/g,
-		`const { start, end } = parseDateRange(url);`);
+	content = content.replace(
+		/const start = url \? url\.searchParams\.get\('start'\) : null;\r?\n\s*const end = url \? url\.searchParams\.get\('end'\) : null;/g,
+		`const { start, end } = parseDateRange(url);`
+	);
 
 	// Also fix instances where they check `start && end` because they're always populated now
 	// Wait, some queries fall back to fetching everything if NO dates are provided, but now there are ALWAYS default dates!
 	// Is this what we want? Yes: "The load functions use these defaults to fetch data."
-	
+
 	fs.writeFileSync(filePath, content);
 }
 
-console.log("Updated date range logic in load functions.");
+console.log('Updated date range logic in load functions.');

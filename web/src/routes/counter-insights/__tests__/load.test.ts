@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 /**
  * Tests for Counter Insights page load function
- * 
+ *
  * Counter Insights analyzes the Counter (POS) channel's performance:
  * - Top 15 items by frequency
  * - Payment method mix (Cash/Card/UPI)
@@ -15,14 +15,12 @@ describe('Counter Insights Load Function', () => {
 			const itemsSummary = 'Butter Naan x2, Paneer Tikka x1, Gulab Jamun x3';
 
 			// Parse function
-			const items = itemsSummary
-				.split(',')
-				.map((item) => {
-					const parts = item.trim().split('x');
-					const name = parts[0].trim();
-					const quantity = parseInt(parts[1]?.trim()) || 1;
-					return { name, quantity };
-				});
+			const items = itemsSummary.split(',').map((item) => {
+				const parts = item.trim().split('x');
+				const name = parts[0].trim();
+				const quantity = parseInt(parts[1]?.trim()) || 1;
+				return { name, quantity };
+			});
 
 			expect(items).toHaveLength(3);
 			expect(items[0]).toEqual({ name: 'Butter Naan', quantity: 2 });
@@ -48,14 +46,12 @@ describe('Counter Insights Load Function', () => {
 		it('should handle whitespace variations', () => {
 			const itemsSummary = '  Butter Naan   x2  ,  Paneer Tikka x1  ';
 
-			const items = itemsSummary
-				.split(',')
-				.map((item) => {
-					const parts = item.trim().split('x');
-					const name = parts[0].trim();
-					const quantity = parseInt(parts[1]?.trim()) || 1;
-					return { name, quantity };
-				});
+			const items = itemsSummary.split(',').map((item) => {
+				const parts = item.trim().split('x');
+				const name = parts[0].trim();
+				const quantity = parseInt(parts[1]?.trim()) || 1;
+				return { name, quantity };
+			});
 
 			expect(items[0].name).toBe('Butter Naan');
 			expect(items[1].name).toBe('Paneer Tikka');
@@ -65,14 +61,12 @@ describe('Counter Insights Load Function', () => {
 			const itemsSummary = null;
 
 			const items = itemsSummary
-				? itemsSummary
-						.split(',')
-						.map((item) => {
-							const parts = item.trim().split('x');
-							const name = parts[0].trim();
-							const quantity = parseInt(parts[1]?.trim()) || 1;
-							return { name, quantity };
-						})
+				? itemsSummary.split(',').map((item) => {
+						const parts = item.trim().split('x');
+						const name = parts[0].trim();
+						const quantity = parseInt(parts[1]?.trim()) || 1;
+						return { name, quantity };
+					})
 				: [];
 
 			expect(items).toHaveLength(0);
@@ -104,9 +98,8 @@ describe('Counter Insights Load Function', () => {
 			for (const order of orders) {
 				if (order.channel !== 'counter' || order.status?.toLowerCase() !== 'delivered') continue;
 
-				const items = order.items_summary
-					?.split(',')
-					.map((item) => item.trim().split('x')[0].trim()) || [];
+				const items =
+					order.items_summary?.split(',').map((item) => item.trim().split('x')[0].trim()) || [];
 
 				for (const item of items) {
 					itemCounts[item] = (itemCounts[item] || 0) + 1;
@@ -135,7 +128,8 @@ describe('Counter Insights Load Function', () => {
 			const itemCounts: Record<string, number> = {};
 			for (const order of orders) {
 				if (order.channel !== 'counter' || order.status?.toLowerCase() !== 'delivered') continue;
-				const items = order.items_summary?.split(',').map((item) => item.trim().split('x')[0].trim()) || [];
+				const items =
+					order.items_summary?.split(',').map((item) => item.trim().split('x')[0].trim()) || [];
 				for (const item of items) {
 					itemCounts[item] = (itemCounts[item] || 0) + 1;
 				}
@@ -155,7 +149,8 @@ describe('Counter Insights Load Function', () => {
 			for (const order of orders) {
 				const status = (order.status || '').toLowerCase();
 				if (order.channel !== 'counter' || status === 'cancelled' || status === 'failed') continue;
-				const items = order.items_summary?.split(',').map((item) => item.trim().split('x')[0].trim()) || [];
+				const items =
+					order.items_summary?.split(',').map((item) => item.trim().split('x')[0].trim()) || [];
 				for (const item of items) {
 					itemCounts[item] = (itemCounts[item] || 0) + 1;
 				}
@@ -272,7 +267,8 @@ describe('Counter Insights Load Function', () => {
 
 			const itemCounts: Record<string, number> = {};
 			for (const order of orders) {
-				const items = order.items_summary?.split(',').map((item) => item.trim().split('x')[0].trim()) || [];
+				const items =
+					order.items_summary?.split(',').map((item) => item.trim().split('x')[0].trim()) || [];
 				for (const item of items) {
 					itemCounts[item] = (itemCounts[item] || 0) + 1;
 				}
@@ -301,9 +297,9 @@ describe('Counter Insights Load Function', () => {
 
 		it('should return fewer than 15 items if less than 15 exist', () => {
 			const itemCounts = {
-				'Item1': 5,
-				'Item2': 3,
-				'Item3': 1
+				Item1: 5,
+				Item2: 3,
+				Item3: 1
 			};
 
 			const topItems = Object.entries(itemCounts)

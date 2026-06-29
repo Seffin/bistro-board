@@ -69,7 +69,10 @@ export function formatDateRange(start: string, end: string): string {
  * Helper function to build URL with date range parameters
  */
 export function buildURLWithDateRange(baseURL: string, start: string, end: string): string {
-	const url = new URL(baseURL, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+	const url = new URL(
+		baseURL,
+		typeof window !== 'undefined' ? window.location.origin : 'http://localhost'
+	);
 	if (start && end) {
 		url.searchParams.set('start', start);
 		url.searchParams.set('end', end);

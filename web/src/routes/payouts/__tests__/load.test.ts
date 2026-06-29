@@ -12,7 +12,9 @@ describe('Payout Analytics Load Function', () => {
 
 			const byWeek: Record<number, number> = {};
 			for (const payout of payouts) {
-				const week = Math.floor((payout.date.getTime() - new Date('2024-01-01').getTime()) / (7 * 24 * 60 * 60 * 1000));
+				const week = Math.floor(
+					(payout.date.getTime() - new Date('2024-01-01').getTime()) / (7 * 24 * 60 * 60 * 1000)
+				);
 				byWeek[week] = (byWeek[week] || 0) + payout.amount;
 			}
 

@@ -28,10 +28,7 @@ export const actions: Actions = {
 		}
 
 		// Check user in database
-		const result = await db
-			.select()
-			.from(users)
-			.where(eq(users.username, username));
+		const result = await db.select().from(users).where(eq(users.username, username));
 
 		if (result.length === 0 || !verifyPassword(password, result[0].password_hash)) {
 			return fail(401, { error: 'Invalid username or password.', username });

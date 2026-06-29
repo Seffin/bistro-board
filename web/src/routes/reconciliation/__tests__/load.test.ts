@@ -44,7 +44,9 @@ describe('Reconciliation Load Function', () => {
 			];
 
 			const reconciled = counterData.map((counter) => {
-				const ledger = ledgerData.find((l) => l.date === counter.date && l.channel === counter.channel);
+				const ledger = ledgerData.find(
+					(l) => l.date === counter.date && l.channel === counter.channel
+				);
 				return {
 					date: counter.date,
 					channel: counter.channel,

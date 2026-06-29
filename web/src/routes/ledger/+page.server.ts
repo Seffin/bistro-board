@@ -34,11 +34,7 @@ export const load = async ({ url }: { url: URL }): Promise<{ ledger: LedgerData 
 
 	if (start && end) {
 		query = query.where(
-			between(
-				income_register.date,
-				new Date(`${start}T00:00:00Z`),
-				new Date(`${end}T23:59:59Z`)
-			)
+			between(income_register.date, new Date(`${start}T00:00:00Z`), new Date(`${end}T23:59:59Z`))
 		);
 	}
 
@@ -47,7 +43,8 @@ export const load = async ({ url }: { url: URL }): Promise<{ ledger: LedgerData 
 	// Group by date
 	const byDate = new Map<string, typeof records>();
 	for (const record of records) {
-		const dateStr = record.date instanceof Date ? record.date.toISOString().split('T')[0] : record.date;
+		const dateStr =
+			record.date instanceof Date ? record.date.toISOString().split('T')[0] : record.date;
 		if (!byDate.has(dateStr)) {
 			byDate.set(dateStr, []);
 		}

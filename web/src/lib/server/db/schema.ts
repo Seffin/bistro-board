@@ -54,7 +54,9 @@ export const orders = pgTable('orders', {
 
 export const order_payments = pgTable('order_payments', {
 	payment_id: serial('payment_id').primaryKey(),
-	order_id: text('order_id').notNull().references(() => orders.order_id, { onDelete: 'cascade' }),
+	order_id: text('order_id')
+		.notNull()
+		.references(() => orders.order_id, { onDelete: 'cascade' }),
 	payment_type: text('payment_type').notNull(),
 	amount: real('amount').notNull()
 });

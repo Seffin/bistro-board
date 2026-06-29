@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createDateRangeStore, createIsDateRangeActiveDerived, formatDateRange, buildURLWithDateRange } from '../stores/dateRange';
+import {
+	createDateRangeStore,
+	createIsDateRangeActiveDerived,
+	formatDateRange,
+	buildURLWithDateRange
+} from '../stores/dateRange';
 import { get } from 'svelte/store';
 
 describe('dateRange store', () => {

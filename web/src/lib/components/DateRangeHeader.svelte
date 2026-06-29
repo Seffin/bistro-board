@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { getDefaultDateRange } from '$lib/utils/date-filter';
+	import ChannelFilter from './ChannelFilter.svelte';
 
 	interface Props {
 		onFilterApply?: (start: string, end: string) => void;
@@ -52,21 +53,52 @@
 	}
 </script>
 
-<form class="date-picker-form" onsubmit={applyDateRange}>
-	<div class="date-inputs">
-		<input type="date" bind:value={startDate} class="simple-input" aria-label="Start Date" />
-		<span class="separator">to</span>
-		<input type="date" bind:value={endDate} class="simple-input" aria-label="End Date" />
-	</div>
-	<div class="button-group">
-		<button type="submit" class="btn btn-secondary">Filter</button>
-		{#if startDate || endDate}
-			<button type="button" class="btn btn-ghost" onclick={clearDateRange}>Clear</button>
-		{/if}
-	</div>
-</form>
+<div class="filters-container">
+	<ChannelFilter />
+	<form class="date-picker-form" onsubmit={applyDateRange}>
+		<div class="date-inputs">
+			<input type="date" bind:value={startDate} class="simple-input" aria-label="Start Date" />
+			<span class="separator">to</span>
+			<input type="date" bind:value={endDate} class="simple-input" aria-label="End Date" />
+		</div>
+		<div class="date-actions">
+			<button type="submit" class="btn btn-secondary btn-sm" aria-label="Apply date filter"
+				>Apply</button
+			>
+			{#if startDate && endDate}
+				<button
+					type="button"
+					class="btn btn-icon btn-sm"
+					aria-label="Clear date filter"
+					onclick={clearDateRange}
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="14"
+						height="14"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"
+						></line></svg
+					>
+				</button>
+			{/if}
+		</div>
+	</form>
+</div>
 
 <style>
+	.filters-container {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+
 	.date-picker-form {
 		display: flex;
 		align-items: center;

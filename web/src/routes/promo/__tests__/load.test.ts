@@ -53,12 +53,7 @@ describe('Promo Impact Load Function', () => {
 		});
 
 		it('should calculate total discount value', () => {
-			const orders = [
-				{ discount: 50 },
-				{ discount: 75 },
-				{ discount: 100 },
-				{ discount: 125 }
-			];
+			const orders = [{ discount: 50 }, { discount: 75 }, { discount: 100 }, { discount: 125 }];
 
 			const totalDiscount = orders.reduce((sum, o) => sum + o.discount, 0);
 			expect(totalDiscount).toBe(350);

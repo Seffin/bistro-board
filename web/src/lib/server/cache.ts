@@ -22,7 +22,11 @@ const cache = new NodeCache({
  * @param fetcher - Async function that computes the value on cache miss
  * @param ttl - Optional TTL override in seconds (default: 300s / 5 min)
  */
-export async function getCached<T>(key: string, fetcher: () => Promise<T>, ttl?: number): Promise<T> {
+export async function getCached<T>(
+	key: string,
+	fetcher: () => Promise<T>,
+	ttl?: number
+): Promise<T> {
 	const cached = cache.get<T>(key);
 	if (cached !== undefined) {
 		return cached;

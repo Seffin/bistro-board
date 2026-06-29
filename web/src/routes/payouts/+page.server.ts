@@ -31,10 +31,7 @@ export const load = async ({ url }: { url: URL }): Promise<{ payouts: PayoutData
 	const { start, end } = parseDateRange(url);
 
 	// Fetch orders excluding cancelled/failed
-	let query = db
-		.select()
-		.from(orders)
-		.where(ne(orders.status, 'cancelled'));
+	let query = db.select().from(orders).where(ne(orders.status, 'cancelled'));
 
 	if (start && end) {
 		query = query.where(
@@ -48,7 +45,8 @@ export const load = async ({ url }: { url: URL }): Promise<{ payouts: PayoutData
 	const weeklyMap = new Map<string, Record<string, number>>();
 
 	for (const order of orders_data) {
-		const orderDate = order.order_date instanceof Date ? order.order_date : new Date(order.order_date);
+		const orderDate =
+			order.order_date instanceof Date ? order.order_date : new Date(order.order_date);
 		const dayOfWeek = orderDate.getDay();
 		const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
 
@@ -71,7 +69,9 @@ export const load = async ({ url }: { url: URL }): Promise<{ payouts: PayoutData
 		}
 
 		const channel = (order.channel || 'other').toLowerCase();
-		const netPayout = parseFloat(order.net_payout?.toString() || order.grand_total?.toString() || '0');
+		const netPayout = parseFloat(
+			order.net_payout?.toString() || order.grand_total?.toString() || '0'
+		);
 
 		const week = weeklyMap.get(weekKey)!;
 		if (channel === 'counter') week.counter += netPayout;

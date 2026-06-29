@@ -6,7 +6,7 @@
 		GMAIL_APP_PASSWORD: '',
 		GOOGLE_SHEET_ID: ''
 	});
-	
+
 	let isLoading = $state(true);
 	let isSaving = $state(false);
 	let statusMessage = $state('');
@@ -56,7 +56,9 @@
 			statusMessage = err.message || 'An unexpected error occurred.';
 		} finally {
 			isSaving = false;
-			setTimeout(() => { statusMessage = ''; }, 5000);
+			setTimeout(() => {
+				statusMessage = '';
+			}, 5000);
 		}
 	}
 </script>
@@ -75,23 +77,34 @@
 					<h3>Gmail Integration (For Email Auto-Fetch)</h3>
 					<div class="form-group">
 						<label for="gmail_user">Gmail Address</label>
-						<input type="email" id="gmail_user" bind:value={credentials.GMAIL_USER} placeholder="e.g. restaurant@gmail.com" />
+						<input
+							type="email"
+							id="gmail_user"
+							bind:value={credentials.GMAIL_USER}
+							placeholder="e.g. restaurant@gmail.com"
+						/>
 					</div>
-					
+
 					<div class="form-group">
 						<label for="gmail_password">App Password</label>
 						<div class="password-input">
-							<input 
-								type={showPassword ? "text" : "password"} 
-								id="gmail_password" 
-								bind:value={credentials.GMAIL_APP_PASSWORD} 
-								placeholder="16-character app password" 
+							<input
+								type={showPassword ? 'text' : 'password'}
+								id="gmail_password"
+								bind:value={credentials.GMAIL_APP_PASSWORD}
+								placeholder="16-character app password"
 							/>
-							<button type="button" class="toggle-visibility" onclick={() => showPassword = !showPassword}>
+							<button
+								type="button"
+								class="toggle-visibility"
+								onclick={() => (showPassword = !showPassword)}
+							>
 								{showPassword ? 'Hide' : 'Show'}
 							</button>
 						</div>
-						<small class="help-text">Use a Google App Password, not your main account password.</small>
+						<small class="help-text"
+							>Use a Google App Password, not your main account password.</small
+						>
 					</div>
 				</div>
 
@@ -99,8 +112,15 @@
 					<h3>Google Sheets Integration (For Register Sync)</h3>
 					<div class="form-group">
 						<label for="gsheet_id">Google Sheet ID</label>
-						<input type="text" id="gsheet_id" bind:value={credentials.GOOGLE_SHEET_ID} placeholder="The long ID from the Sheet URL" />
-						<small class="help-text">Example: 1BxiMVs0XRYFgwn... (found between /d/ and /edit in the URL)</small>
+						<input
+							type="text"
+							id="gsheet_id"
+							bind:value={credentials.GOOGLE_SHEET_ID}
+							placeholder="The long ID from the Sheet URL"
+						/>
+						<small class="help-text"
+							>Example: 1BxiMVs0XRYFgwn... (found between /d/ and /edit in the URL)</small
+						>
 					</div>
 				</div>
 
@@ -166,7 +186,9 @@
 		color: var(--text-secondary);
 	}
 
-	input[type="text"], input[type="email"], input[type="password"] {
+	input[type='text'],
+	input[type='email'],
+	input[type='password'] {
 		padding: 0.75rem;
 		border: 1px solid var(--border-color);
 		border-radius: var(--border-radius);

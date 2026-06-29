@@ -11,10 +11,10 @@ describe('CSV Utility', () => {
 			];
 
 			const csv = toCSV(headers, rows);
-			
+
 			// Should start with BOM
 			expect(csv.startsWith('\uFEFF')).toBe(true);
-			
+
 			const lines = csv.substring(1).split('\r\n');
 			expect(lines).toHaveLength(3); // Header + 2 rows
 			expect(lines[0]).toBe('id,name,amount');
@@ -24,9 +24,7 @@ describe('CSV Utility', () => {
 
 		it('should escape strings containing commas', () => {
 			const headers = ['name', 'description'];
-			const rows = [
-				{ name: 'Item 1', description: 'This is a test, with a comma' }
-			];
+			const rows = [{ name: 'Item 1', description: 'This is a test, with a comma' }];
 
 			const csv = toCSV(headers, rows);
 			const lines = csv.substring(1).split('\r\n');
@@ -35,9 +33,7 @@ describe('CSV Utility', () => {
 
 		it('should escape strings containing quotes', () => {
 			const headers = ['name', 'quote'];
-			const rows = [
-				{ name: 'Item 1', quote: 'He said "Hello"' }
-			];
+			const rows = [{ name: 'Item 1', quote: 'He said "Hello"' }];
 
 			const csv = toCSV(headers, rows);
 			const lines = csv.substring(1).split('\r\n');
@@ -47,9 +43,7 @@ describe('CSV Utility', () => {
 		it('should format dates as YYYY-MM-DD', () => {
 			const headers = ['id', 'date'];
 			const date = new Date('2026-06-15T12:00:00Z');
-			const rows = [
-				{ id: 1, date }
-			];
+			const rows = [{ id: 1, date }];
 
 			const csv = toCSV(headers, rows);
 			const lines = csv.substring(1).split('\r\n');
@@ -58,9 +52,7 @@ describe('CSV Utility', () => {
 
 		it('should handle null and undefined values as empty strings', () => {
 			const headers = ['id', 'value1', 'value2'];
-			const rows = [
-				{ id: 1, value1: null, value2: undefined }
-			];
+			const rows = [{ id: 1, value1: null, value2: undefined }];
 
 			const csv = toCSV(headers, rows);
 			const lines = csv.substring(1).split('\r\n');
@@ -71,7 +63,7 @@ describe('CSV Utility', () => {
 	describe('csvResponse', () => {
 		it('should create a response with correct headers', () => {
 			const response = csvResponse('id,name\n1,test', 'export.csv');
-			
+
 			expect(response.headers.get('Content-Type')).toBe('text/csv; charset=utf-8');
 			expect(response.headers.get('Content-Disposition')).toBe('attachment; filename="export.csv"');
 			expect(response.headers.get('Cache-Control')).toBe('no-cache');

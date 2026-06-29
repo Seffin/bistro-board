@@ -69,7 +69,9 @@
 				height: 350
 			},
 			series: insights.payment_mix.map((p: any) => p.count),
-			labels: insights.payment_mix.map((p: any) => p.type.charAt(0).toUpperCase() + p.type.slice(1)),
+			labels: insights.payment_mix.map(
+				(p: any) => p.type.charAt(0).toUpperCase() + p.type.slice(1)
+			),
 			colors: ['#10b981', '#f97316', '#8b5cf6', '#ef4444'],
 			dataLabels: {
 				enabled: true,
@@ -179,9 +181,7 @@
 									<span class="percent-badge">{item.percentage.toFixed(1)}%</span>
 								</td>
 								<td class="text-center">
-									<button class="action-btn" onclick={() => selectItem(item)}>
-										View Trends
-									</button>
+									<button class="action-btn" onclick={() => selectItem(item)}> View Trends </button>
 								</td>
 							</tr>
 						{/each}
@@ -207,7 +207,8 @@
 							<tr>
 								<td class="font-medium">
 									<div class="payment-badge">
-										<span class="payment-dot" style:background-color={getPaymentColor(payment.type)}></span>
+										<span class="payment-dot" style:background-color={getPaymentColor(payment.type)}
+										></span>
 										{payment.type.charAt(0).toUpperCase() + payment.type.slice(1)}
 									</div>
 								</td>
@@ -225,7 +226,8 @@
 		<div class="empty-state card">
 			<h3>No Counter Data Available</h3>
 			<p class="text-muted">
-				No orders found for the Counter channel in the selected date range. Try adjusting the filters.
+				No orders found for the Counter channel in the selected date range. Try adjusting the
+				filters.
 			</p>
 		</div>
 	{/if}
@@ -334,7 +336,8 @@
 		text-align: left;
 	}
 
-	th, td {
+	th,
+	td {
 		padding: 1rem 1.5rem;
 		border-bottom: 1px solid var(--border-color);
 	}
