@@ -43,8 +43,6 @@ npm install
 ### 3. Configure Environment Variables
 1. Copy `web/.env.example` to `web/.env` and fill in the values:
    - `DATABASE_URL`: Your Neon PostgreSQL connection string
-   - `ADMIN_USER`: Admin username for login
-   - `ADMIN_PASSWORD_HASH`: Bcrypt hash of the admin password
    - `SESSION_SECRET`: A random secret for signing session cookies
 2. For Python data import, create a root `.env` with Gmail/Google credentials.
 

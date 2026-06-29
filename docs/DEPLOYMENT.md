@@ -30,15 +30,15 @@ This guide covers deploying Bistro Board to **Vercel** with **Neon PostgreSQL** 
 
 ---
 
-## 2. Generate Admin Password Hash
+## 2. Generate Session Secret
 
-Generate a bcrypt hash for your admin password:
+Generate a random string for your `SESSION_SECRET` (used to securely sign auth cookies):
 
 ```bash
-node -e "const b=require('bcryptjs'); console.log(b.hashSync('YOUR_PASSWORD', 10));"
+node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
 ```
 
-Copy the output — you'll need it for the `ADMIN_PASSWORD_HASH` environment variable.
+Copy the output — you'll need it for Vercel.
 
 ---
 
@@ -65,16 +65,14 @@ Set the following in Vercel Dashboard → Settings → Environment Variables:
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `DATABASE_URL` | Neon PostgreSQL pooled connection string | ✅ |
-| `ADMIN_USER` | Admin username for login | ✅ |
-| `ADMIN_PASSWORD_HASH` | Bcrypt hash of admin password | ✅ |
 | `SESSION_SECRET` | Random string for signing session cookies (min 32 chars) | ✅ |
 | `LOG_LEVEL` | Logging level (`info`, `warn`, `error`, `debug`) | ❌ (default: `info`) |
 | `NODE_ENV` | Set to `production` | ❌ (auto-set by Vercel) |
 
-**Generate a random session secret:**
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
-```
+---
+
+## 4. Initial Auth Setup
+Once deployed, navigate to `/register` on your Vercel domain to create your first administrator account. This will save a secure `bcrypt` hashed password in your Neon `users` table. Subsequent logins will use the `/login` route.
 
 ---
 
