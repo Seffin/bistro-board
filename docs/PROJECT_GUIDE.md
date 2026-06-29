@@ -187,14 +187,12 @@ npm run db:generate; npm run db:migrate; npm run db:studio # Drizzle management
 
 ## 10. Roadmap, Known Limitations & Troubleshooting
 ### Web Roadmap & Settings Proposal (`docs/settings_tab_proposal.md`)
-- **P0**: Automate SQLite → Postgres sync post-import; manual upload for channels + register in Settings tab (no credentials required). Executive Overview Home dashboard completed in Phase 2.
-- **P1**: Port reconciliation and economics views; implement `/settings` tab (move Gmail/Sheets config from `.env` to UI + `settings.json`).
-- **P2**: Deprecate FastAPI REST layer once parity reached; dual-write ingest directly to Postgres; data purge, DB export/import, scheduled sync.
+- **P0 / P1 ✅**: Executive Overview Dashboard, all 7 analytical views, and Settings UI completed. Manual upload for channels + register, credentials configuration (Gmail/Sheets) via `app_settings` table, and dynamic Python orchestration via `/api/sync/+server.ts` are live.
+- **P2**: Deprecate FastAPI REST layer completely; dual-write ingest directly to Postgres or rewrite Python parsers to Node.js; data purge, DB export/import, scheduled CRON sync.
 - **P3**: Display preferences, channel white-labeling.
-*Planned Endpoints*: `/api/settings`, `/api/upload/{channel}`, `/api/data/purge/{channel}`.
 
 ### Current Limitations Summary
-Hardcoded ingest config (Legacy); full register replace on import; no auth in either stack; dual DB sync is manual (`migrate-data.ts`); incomplete web feature parity (Home overview and MVP tables complete; settings tab planned); Counter item parsing comma-split (not exposed in web); single restaurant scope; `/settings` route 404 in web.
+Legacy DB sync is still manual (`migrate-data.ts`) after SQLite import; full register replace on import; no auth in either stack; Counter item parsing comma-split (not exposed in web); single restaurant scope.
 
 ### Troubleshooting Guide
 - **"Database file not found" in UI**: No sync run yet or wrong path → Run `python import_sales.py` or click Sync Data.
