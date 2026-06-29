@@ -19,6 +19,15 @@ export const app_settings = pgTable('app_settings', {
 	updated_at: timestamp('updated_at').defaultNow().notNull()
 });
 
+export const users = pgTable('users', {
+	id: serial('id').primaryKey(),
+	username: text('username').notNull().unique(),
+	email: text('email').notNull().unique(),
+	password_hash: text('password_hash').notNull(),
+	full_name: text('full_name').notNull(),
+	created_at: timestamp('created_at').defaultNow().notNull()
+});
+
 // --- Data Tables ---
 
 export const orders = pgTable('orders', {

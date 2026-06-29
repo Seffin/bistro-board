@@ -6,11 +6,11 @@
 </script>
 
 <svelte:head>
-	<title>Bistro Board | Login</title>
+	<title>Bistro Board | Register</title>
 </svelte:head>
 
 <div class="login-container">
-	<div class="login-card">
+	<div class="login-card register-card">
 		<div class="login-header">
 			<div class="logo-mark">
 				<svg width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -18,8 +18,8 @@
 					<text x="16" y="22" text-anchor="middle" fill="white" font-size="18" font-weight="700" font-family="Inter, sans-serif">B</text>
 				</svg>
 			</div>
-			<h1>Bistro Board</h1>
-			<p class="subtitle">Sign in to your business dashboard</p>
+			<h1>Create an Account</h1>
+			<p class="subtitle">Join Bistro Board to manage your business</p>
 		</div>
 
 		{#if form?.error}
@@ -44,14 +44,41 @@
 			}}
 		>
 			<div class="form-group">
+				<label for="fullName">Full Name</label>
+				<input
+					type="text"
+					id="fullName"
+					name="fullName"
+					value={form?.fullName ?? ''}
+					placeholder="John Doe"
+					required
+					disabled={loading}
+				/>
+			</div>
+
+			<div class="form-group">
 				<label for="username">Username</label>
 				<input
 					type="text"
 					id="username"
 					name="username"
 					value={form?.username ?? ''}
-					placeholder="Enter your username"
+					placeholder="johndoe"
 					autocomplete="username"
+					required
+					disabled={loading}
+				/>
+			</div>
+
+			<div class="form-group">
+				<label for="email">Email</label>
+				<input
+					type="email"
+					id="email"
+					name="email"
+					value={form?.email ?? ''}
+					placeholder="john@example.com"
+					autocomplete="email"
 					required
 					disabled={loading}
 				/>
@@ -63,8 +90,21 @@
 					type="password"
 					id="password"
 					name="password"
-					placeholder="Enter your password"
-					autocomplete="current-password"
+					placeholder="Create a strong password"
+					autocomplete="new-password"
+					required
+					disabled={loading}
+				/>
+			</div>
+
+			<div class="form-group">
+				<label for="confirmPassword">Confirm Password</label>
+				<input
+					type="password"
+					id="confirmPassword"
+					name="confirmPassword"
+					placeholder="Confirm your password"
+					autocomplete="new-password"
 					required
 					disabled={loading}
 				/>
@@ -73,14 +113,14 @@
 			<button type="submit" class="btn btn-primary login-btn" disabled={loading}>
 				{#if loading}
 					<span class="spinner"></span>
-					Signing in...
+					Creating account...
 				{:else}
-					Sign In
+					Sign Up
 				{/if}
 			</button>
 			
 			<div class="auth-footer">
-				Don't have an account? <a href="/register">Sign up</a>
+				Already have an account? <a href="/login">Sign in</a>
 			</div>
 		</form>
 	</div>
@@ -107,6 +147,10 @@
 			0 4px 6px -1px rgba(0, 0, 0, 0.1),
 			0 2px 4px -2px rgba(0, 0, 0, 0.1);
 		animation: slideUp 0.4s ease-out;
+	}
+	
+	.register-card {
+		max-width: 450px;
 	}
 
 	@keyframes slideUp {

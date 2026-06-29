@@ -3,10 +3,10 @@ import { orders, expenses } from '$lib/server/db/schema';
 import { getAllChannels } from '$lib/server/config';
 import { between } from 'drizzle-orm';
 import { getCached } from '$lib/server/cache';
+import { parseDateRange } from '$lib/utils/date-filter';
 
 export async function load({ url }: { url?: URL } = {}) {
-	const start = url ? url.searchParams.get('start') : null;
-	const end = url ? url.searchParams.get('end') : null;
+	const { start, end } = parseDateRange(url);
 
 	const cacheKey = `dashboard:${start || 'all'}:${end || 'all'}`;
 

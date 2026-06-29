@@ -2,6 +2,7 @@ import { db } from '$lib/server/db';
 import { orders } from '$lib/server/db/schema';
 import { getAllChannels } from '$lib/server/config';
 import { between } from 'drizzle-orm';
+import { parseDateRange } from '$lib/utils/date-filter';
 
 export interface ChannelEconomics {
 	channel_id: string;
@@ -33,8 +34,7 @@ export interface EconomicsData {
 }
 
 export const load = async ({ url }: { url: URL }): Promise<{ economics: EconomicsData }> => {
-	const start = url.searchParams.get('start');
-	const end = url.searchParams.get('end');
+	const { start, end } = parseDateRange(url);
 
 	// Fetch all active channels
 	const activeChannels = await getAllChannels();

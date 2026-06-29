@@ -3,6 +3,7 @@ import { orders } from '$lib/server/db/schema';
 import { and, between, ilike, or, desc } from 'drizzle-orm';
 import { error } from '@sveltejs/kit';
 import logger from '$lib/server/logger';
+import { parseDateRange } from '$lib/utils/date-filter';
 
 export interface OrderRecord {
 	order_id: string;
@@ -41,8 +42,7 @@ export const load = async ({
 	const channels = url.searchParams.get('channels')?.split(',').filter(Boolean) || [];
 	const statuses = url.searchParams.get('statuses')?.split(',').filter(Boolean) || [];
 	const search = url.searchParams.get('search') || '';
-	const start = url.searchParams.get('start');
-	const end = url.searchParams.get('end');
+	const { start, end } = parseDateRange(url);
 
 	// Build filter conditions
 	const filterConditions = [];

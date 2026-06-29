@@ -7,6 +7,9 @@ import {
 	SESSION_MAX_AGE
 } from '$lib/server/auth';
 import type { Actions, PageServerLoad } from './$types';
+import { db } from '$lib/server/db';
+import { users } from '$lib/server/db/schema';
+import { eq } from 'drizzle-orm';
 
 export const load: PageServerLoad = async () => {
 	// The hooks.server.ts handle already redirects authenticated users away from /login.
@@ -24,26 +27,17 @@ export const actions: Actions = {
 			return fail(400, { error: 'Username and password are required.', username });
 		}
 
-		const adminUser = env.ADMIN_USER?.trim();
-		let adminPasswordHash = env.ADMIN_PASSWORD_HASH?.trim();
-		const sessionSecret = env.SESSION_SECRET || 'dev-fallback-secret-change-me';
+		// Check user in database
+		const result = await db
+			.select()
+			.from(users)
+			.where(eq(users.username, username));
 
-		// Clean quotes if Vite passes them literally
-		if (adminPasswordHash?.startsWith("'") && adminPasswordHash?.endsWith("'")) {
-			adminPasswordHash = adminPasswordHash.slice(1, -1);
-		} else if (adminPasswordHash?.startsWith('"') && adminPasswordHash?.endsWith('"')) {
-			adminPasswordHash = adminPasswordHash.slice(1, -1);
-		}
-
-		if (!adminUser || !adminPasswordHash) {
-			console.error('[AUTH] ADMIN_USER or ADMIN_PASSWORD_HASH not configured in environment.');
-			return fail(500, { error: 'Authentication is not configured. Contact administrator.', username });
-		}
-
-		// Verify credentials
-		if (username !== adminUser || !verifyPassword(password, adminPasswordHash)) {
+		if (result.length === 0 || !verifyPassword(password, result[0].password_hash)) {
 			return fail(401, { error: 'Invalid username or password.', username });
 		}
+
+		const sessionSecret = env.SESSION_SECRET || 'dev-fallback-secret-change-me';
 
 		// Create session token and set cookie
 		const token = createSessionToken(username, sessionSecret);

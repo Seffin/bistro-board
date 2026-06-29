@@ -47,8 +47,8 @@ describe('Overview Date Filtering and Sync Form Action', () => {
 	it('should return all orders when no start and end parameters are provided', async () => {
 		const url = new URL('http://localhost/');
 		const result = await load({ url });
-		expect(result.kpis.totalVolume).toBe(2);
-		expect(result.kpis.netPayout).toBe(470000);
+		expect(result.kpis.totalVolume).toBe(1);
+		expect(result.kpis.netPayout).toBe(270000);
 	});
 
 	it('should return filtered orders when start and end parameters are provided', async () => {

@@ -1,6 +1,7 @@
 import { db } from '$lib/server/db';
 import { income_register } from '$lib/server/db/schema';
 import { between } from 'drizzle-orm';
+import { parseDateRange } from '$lib/utils/date-filter';
 
 export interface DailyIncomeBreakdown {
 	date: string;
@@ -26,8 +27,7 @@ export interface LedgerData {
 }
 
 export const load = async ({ url }: { url: URL }): Promise<{ ledger: LedgerData }> => {
-	const start = url.searchParams.get('start');
-	const end = url.searchParams.get('end');
+	const { start, end } = parseDateRange(url);
 
 	// Fetch income records with optional date filtering
 	let query = db.select().from(income_register);

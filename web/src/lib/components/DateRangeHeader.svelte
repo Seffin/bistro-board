@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { getDefaultDateRange } from '$lib/utils/date-filter';
 
 	interface Props {
 		onFilterApply?: (start: string, end: string) => void;
@@ -7,9 +8,10 @@
 
 	let { onFilterApply }: Props = $props();
 
-	// Initialize from URL params
-	let startDate = $state(page.url.searchParams.get('start') || '');
-	let endDate = $state(page.url.searchParams.get('end') || '');
+	// Initialize from URL params or fallback to default range
+	const defaultRange = getDefaultDateRange();
+	let startDate = $state(page.url.searchParams.get('start') || defaultRange.start);
+	let endDate = $state(page.url.searchParams.get('end') || defaultRange.end);
 
 	function applyDateRange(e: Event) {
 		e.preventDefault();

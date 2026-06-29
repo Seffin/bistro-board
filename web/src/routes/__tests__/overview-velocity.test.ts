@@ -23,10 +23,12 @@ vi.mock('$lib/server/db', () => ({
 	db: {
 		select: vi.fn().mockReturnValue({
 			from: vi.fn().mockImplementation((table: any) => {
-				if (table && table[Symbol.for('drizzle:Name')] === 'expenses') {
-					return Promise.resolve([]);
-				}
-				return Promise.resolve(mockOrders);
+				const isExpense = table && table[Symbol.for('drizzle:Name')] === 'expenses';
+				const data = isExpense ? [] : mockOrders;
+				return {
+					where: vi.fn().mockResolvedValue(data),
+					then: (resolve) => resolve(data)
+				};
 			})
 		})
 	}

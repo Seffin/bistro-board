@@ -1,10 +1,10 @@
 import { db } from '$lib/server/db';
 import { income_register } from '$lib/server/db/schema';
 import { desc, between } from 'drizzle-orm';
+import { parseDateRange } from '$lib/utils/date-filter';
 
 export const load = async ({ url }: { url: URL }) => {
-	const start = url.searchParams.get('start');
-	const end = url.searchParams.get('end');
+	const { start, end } = parseDateRange(url);
 
 	// Fetch the most recent 50 ledger entries
 	const ledger = start && end

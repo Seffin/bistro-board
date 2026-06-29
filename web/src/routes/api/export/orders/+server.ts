@@ -4,14 +4,14 @@ import { and, between, ilike, or, desc } from 'drizzle-orm';
 import { toCSV, csvResponse } from '$lib/server/csv';
 import type { RequestHandler } from './$types';
 import logger from '$lib/server/logger';
+import { parseDateRange } from '$lib/utils/date-filter';
 
 export const GET: RequestHandler = async ({ url }) => {
 	try {
 		const channels = url.searchParams.get('channels')?.split(',').filter(Boolean) || [];
 		const statuses = url.searchParams.get('statuses')?.split(',').filter(Boolean) || [];
 		const search = url.searchParams.get('search') || '';
-		const start = url.searchParams.get('start');
-		const end = url.searchParams.get('end');
+		const { start, end } = parseDateRange(url);
 
 		const filterConditions = [];
 

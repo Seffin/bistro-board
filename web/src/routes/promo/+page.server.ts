@@ -1,6 +1,7 @@
 import { db } from '$lib/server/db';
 import { orders } from '$lib/server/db/schema';
 import { between, ne } from 'drizzle-orm';
+import { parseDateRange } from '$lib/utils/date-filter';
 
 export interface DiscountBucket {
 	bucket_range: string;
@@ -27,8 +28,7 @@ export interface PromoData {
 }
 
 export const load = async ({ url }: { url: URL }): Promise<{ promo: PromoData }> => {
-	const start = url.searchParams.get('start');
-	const end = url.searchParams.get('end');
+	const { start, end } = parseDateRange(url);
 
 	// Fetch orders
 	let query = db.select().from(orders).where(ne(orders.status, 'cancelled'));

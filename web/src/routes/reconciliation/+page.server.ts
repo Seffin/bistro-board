@@ -1,6 +1,7 @@
 import { db } from '$lib/server/db';
 import { orders, income_register } from '$lib/server/db/schema';
 import { between } from 'drizzle-orm';
+import { parseDateRange } from '$lib/utils/date-filter';
 
 export interface ReconciliationRecord {
 	date: string;
@@ -27,8 +28,7 @@ export interface ReconciliationData {
 }
 
 export const load = async ({ url }: { url: URL }): Promise<{ reconciliation: ReconciliationData }> => {
-	const start = url.searchParams.get('start');
-	const end = url.searchParams.get('end');
+	const { start, end } = parseDateRange(url);
 
 	// Fetch counter orders
 	let counterQuery = db.select().from(orders).where(orders.channel === 'counter');

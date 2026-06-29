@@ -21,10 +21,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 	}
 
-	// Allow access to /login without authentication
-	const isLoginPage = event.url.pathname === '/login';
+	// Allow access to /login and /register without authentication
+	const isAuthPage = event.url.pathname === '/login' || event.url.pathname === '/register';
 
-	if (!event.locals.user && !isLoginPage) {
+	if (!event.locals.user && !isAuthPage) {
 		// API routes return 401 instead of redirecting
 		if (event.url.pathname.startsWith('/api/')) {
 			logger.warn({ path: event.url.pathname, method: event.request.method }, 'Unauthorized API request');
@@ -36,8 +36,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 		throw redirect(303, '/login');
 	}
 
-	// If already logged in and visiting /login, redirect to dashboard
-	if (event.locals.user && isLoginPage) {
+	// If already logged in and visiting an auth page, redirect to dashboard
+	if (event.locals.user && isAuthPage) {
 		throw redirect(303, '/');
 	}
 

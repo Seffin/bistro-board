@@ -1,6 +1,7 @@
 import { db } from '$lib/server/db';
 import { orders, order_payments } from '$lib/server/db/schema';
 import { eq, and, between, inArray } from 'drizzle-orm';
+import { parseDateRange } from '$lib/utils/date-filter';
 
 export interface TopItem {
 	name: string;
@@ -25,8 +26,7 @@ export interface CounterInsightsData {
 }
 
 export const load = async ({ url }: { url: URL }): Promise<{ insights: CounterInsightsData }> => {
-	const start = url.searchParams.get('start');
-	const end = url.searchParams.get('end');
+	const { start, end } = parseDateRange(url);
 
 	// Fetch counter channel orders with optional date filtering
 	const counterOrders =
