@@ -1,4 +1,19 @@
-import { pgTable, serial, integer, text, real, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, serial, integer, text, real, timestamp, boolean } from 'drizzle-orm/pg-core';
+
+// --- Configuration Tables ---
+
+export const channels = pgTable('channels', {
+	id: text('id').primaryKey(),
+	name: text('name').notNull(),
+	color: text('color').notNull(),
+	import_folder: text('import_folder'),
+	email_keywords: text('email_keywords'), // JSON array string, e.g. '["Annexure","Settlement"]'
+	is_active: boolean('is_active').notNull().default(true),
+	created_at: timestamp('created_at').defaultNow().notNull(),
+	updated_at: timestamp('updated_at').defaultNow().notNull()
+});
+
+// --- Data Tables ---
 
 export const orders = pgTable('orders', {
 	order_id: text('order_id').primaryKey(),

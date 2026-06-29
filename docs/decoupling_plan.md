@@ -66,10 +66,46 @@ Instead of having wide tables with hardcoded columns (e.g., `swiggy_gross`, `zom
 * `import_sales.py` & `import_register.py`: Update the parsers to map data to the new database schema based on the dynamically configured channels and their respective `import_folder`s.
 
 ---
-### Next Steps
-If you agree with this approach, I propose we tackle this in the following phases:
-1. **Phase 1: Configuration & UI Shell** - Create `settings.json`, create the `/api/config` endpoint, and update the frontend HTML/JS to use dynamic names and colors.
-2. **Phase 2: Database & Backend APIs** - Refactor the database schema and update the API endpoints to aggregate data dynamically.
-3. **Phase 3: Data Importers** - Update the Python scripts to read from `settings.json` and insert data generically.
+### Implementation Progress
+
+#### Phase 1: Configuration & Channel Management ✅ (Completed)
+Database-backed channel configuration for the SvelteKit web stack, replacing all hardcoded channel references.
+
+**Implemented (TDD — Red/Green/Refactor):**
+- `channels` table in Drizzle schema (`web/src/lib/server/db/schema.ts`) with `id`, `name`, `color`, `import_folder`, `email_keywords`, `is_active`, `created_at`, `updated_at`
+- Seed script (`web/scripts/seed-channels.ts`) — idempotent, inserts Counter/Swiggy/Zomato
+- Configuration service (`web/src/lib/server/config.ts`) — `getAllChannels()`, `getChannelById()`
+- Layout server load (`web/src/routes/+layout.server.ts`) — injects `channels` into all routes
+- Dynamic sidebar with channel color dots (replaces hardcoded nav)
+- Dynamic sales page badges using channel colors from config
+- Dynamic businesses page column headers using channel names from config
+- 20 unit/integration tests across 4 test files, all passing
+
+**Key Design Decisions:**
+- Used `text` PK (slug) for channels to match existing `orders.channel` values — no join needed
+- `email_keywords` stored as JSON string in `text` column — metadata for Python pipeline, not queried by web app
+- Configuration service filters by `is_active = true` so channels can be soft-disabled
+- Channel colors applied via inline `style` attributes for maximum flexibility (no CSS class per channel)
+
+#### Phase 2: Executive Overview Dashboard ✅ (Completed)
+Dynamic, configuration-driven executive landing page (`/`) built with Svelte 5 runes and ApexCharts, replacing all hardcoded legacy dashboard widgets.
+
+**Implemented (TDD — Red/Green/Refactor):**
+- Server-side KPI aggregations (`web/src/routes/+page.server.ts`) calculating Net Payout, Revenue Retained %, Total Volume, Success Rate %, and dynamic per-channel stats (Gross Sales, Orders, Ticket AOV)
+- Dynamic monthly grouping (`YYYY-MM`) directly from `orders.order_date` and `expenses.date`
+- 7 enterprise-grade chart components (`web/src/lib/components/charts/`) wrapping ApexCharts with Svelte 5 runes and actions:
+  - **Revenue Trends** (Line chart)
+  - **Channel Mix** (Area chart)
+  - **Profit & Loss Trend** (Combo Bar + Line chart)
+  - **Expense Breakdown** (Donut chart)
+  - **Hourly Velocity** (Bar chart, peak order volume 11:00 to 22:00)
+  - **Weekly Performance** (Bar chart, weekday revenue distribution)
+  - **Monthly Contribution** (Donut chart, aggregate channel revenue share)
+- Dynamic Date Range Picker filtering (`?start=YYYY-MM-DD&end=YYYY-MM-DD`) utilizing Drizzle `between` clauses
+- Progressive enhancement Sync form action (`?/sync`) simulating live ETL execution with Svelte 5 `$state` loading UI
+- 40 unit/integration tests across 11 test files, 100% passing with zero `svelte-check` warnings
+
+#### Phase 3: Data Importers *(Next)*
+Update the Python scripts to read channel config and insert data generically.
 
 How would you like to proceed?

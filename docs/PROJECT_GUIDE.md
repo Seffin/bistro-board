@@ -21,7 +21,7 @@ The system ingests Excel reports from Counter POS, Swiggy, and Zomato, syncs the
 ### Stack Comparison & Architectural Decisions
 - **Ingestion/ETL (Python ≥3.10, pandas, openpyxl)**: Shared engine owning all Excel parsing, Gmail IMAP fetch, Google Sheet sync, and local SQLite writes.
 - **Legacy Stack (`dashboard/`)**: Production-complete FastAPI + Uvicorn server (`:8000`), reading SQLite (`philos_sales.db`) via raw SQL. Serves vanilla JS + ApexCharts SPA (`dashboard/static/` mounted at `/`, `html=True`). Features full analytics: KPIs, trends, economics, journal, ledger, reconciliation, payouts, promo, and live sync trigger (`POST /api/run-import`).
-- **Web Stack (`web/`)**: Active rewrite MVP. SvelteKit 2 + Vite 8 (`:5173`), Svelte 5 (runes mode), Drizzle ORM + `@neondatabase/serverless` (`neon-http` driver for Vercel edge/serverless compatibility). Reads Neon PostgreSQL (`DATABASE_URL`). Partial parity: `/sales` (50 recent orders), `/businesses` (50 recent income ledger rows). Home (`/`) is placeholder UI; `/settings` is 404 (planned). No auth or live sync trigger yet (requires manual `migrate-data.ts`).
+- **Web Stack (`web/`)**: Active rewrite MVP. SvelteKit 2 + Vite 8 (`:5173`), Svelte 5 (runes mode), Drizzle ORM + `@neondatabase/serverless` (`neon-http` driver for Vercel edge/serverless compatibility). Reads Neon PostgreSQL (`DATABASE_URL`). Features full Executive Overview Home (`/`) with dynamic KPI cards, Theme System tabs, 7 enterprise-grade ApexCharts, interactive Date Range filtering, and progressive enhancement sync actions (`?/sync`). Includes `/sales` (50 recent orders) and `/businesses` (50 recent income ledger rows). `/settings` is 404 (planned). No auth or live Python sync trigger yet (requires manual `migrate-data.ts`).
 - **Architectural Rationale**: SvelteKit collapses frontend/backend into one deployable unit with SSR for faster first paint; PostgreSQL replaces SQLite due to ephemeral serverless filesystems (Vercel); Drizzle + Neon HTTP provides lightweight, type-safe edge querying; Python ingest is retained for battle-tested pandas Excel parsing.
 
 ## 2. Business Context & Financial Concepts
@@ -67,6 +67,29 @@ Logical schema shared across SQLite (`philos_sales.db`, `PRAGMA journal_mode=WAL
 - **`order_payments`**: `payment_id` (INTEGER PK AUTO / serial), `order_id` (FK to orders, CASCADE delete), `payment_type` (`Cash`, `Card`, `UPI`, etc.), `amount`.
 - **`expenses`**: `year`, `month`, `expense_id`, `date`, `category`, `description`, `amount`, `paid`, `mode`, `payment_date`, `rating`, `vendor_category`, `remarks`. Full replace on import.
 - **`income_register`**: `sl` (PK), `month`, `date`, `day`, `week_number`, `petpooja_actual`, `gst_5pct`, `petpooja_net`, `swiggy_gross`, `swiggy_payout`, `paper_bill`, `zomato_gross`, `zomato_payout`, `total_income`, `fed_bank`, `yes_bank`, `cash`. One row per business day.
+- **`channels`** *(Neon PostgreSQL only)*: `id` (TEXT PK, slug e.g. `counter`), `name` (display name), `color` (hex code), `import_folder` (path relative to `sales_reports/`), `email_keywords` (JSON string array), `is_active` (BOOLEAN, default `true`), `created_at`, `updated_at` (timestamps). Drives dynamic sidebar, badge colors, and column headers across the SvelteKit web stack.
+
+### Channel Configuration (Web Stack)
+The web stack uses a database-backed configuration approach instead of hardcoded channel references. The `channels` table defines which sales channels appear in the UI and how they are displayed.
+
+#### Seeding Default Channels
+```bash
+cd web && npx tsx scripts/seed-channels.ts
+```
+This inserts `Counter`, `Swiggy`, and `Zomato` with their respective colors and import folder paths. The script is idempotent (uses `ON CONFLICT DO UPDATE`).
+
+#### Adding a New Channel
+1. Insert a row into the `channels` table (via Drizzle Studio or the seed script):
+   ```sql
+   INSERT INTO channels (id, name, color, import_folder, email_keywords, is_active)
+   VALUES ('ubereats', 'Uber Eats', '#142328', 'sales_reports/ubereats', '["Uber Eats"]', true);
+   ```
+2. The sidebar, sales badges, and business ledger headers will automatically reflect the new channel.
+3. To add data import support, create a `parse_ubereats()` function in `import_sales.py` and add the folder to `sales_reports/`.
+
+#### Configuration Service (`web/src/lib/server/config.ts`)
+- `getAllChannels()` — returns all active channels (used by layout for sidebar)
+- `getChannelById(id)` — returns a single channel by slug (for future per-channel pages)
 
 ## 6. Legacy REST API & Frontend Architecture
 Base URL: `http://127.0.0.1:8000`. Global query params `start_date` & `end_date` (`YYYY-MM-DD`) filter `order_date` (datetime range) or `date` (date string) via `apply_date_filters` / `apply_ledger_date_filters`.
@@ -103,12 +126,12 @@ payout_variance  = actual_payout - ledger.total_income
 
 ## 7. Web Framework Deep Dive (`web/`)
 Scaffolded via `npx sv@0.16.1 create --template minimal --types ts --add prettier eslint drizzle="database:postgresql+postgresql:neon"`. Package: `web@0.0.1`.
-- **Tech Stack**: `@sveltejs/kit` ^2.63, `svelte` ^5.56 (runes mode forced in `vite.config.ts`), `vite` ^8.0, `@sveltejs/adapter-auto` ^7.0 (Vercel target), `drizzle-orm` ^0.45, `drizzle-kit` ^0.31, `@neondatabase/serverless` ^1.1 (`neon-http`), `better-sqlite3` ^12.11 (migration only), `tsx` ^4.22, `dotenv` ^17.4. (Missing: charts, auth, sync upload actions).
+- **Tech Stack**: `@sveltejs/kit` ^2.63, `svelte` ^5.56 (runes mode forced in `vite.config.ts`), `vite` ^8.0, `@sveltejs/adapter-auto` ^7.0 (Vercel target), `drizzle-orm` ^0.45, `drizzle-kit` ^0.31, `@neondatabase/serverless` ^1.1 (`neon-http`), `better-sqlite3` ^12.11 (migration only), `tsx` ^4.22, `dotenv` ^17.4. Includes dynamic ApexCharts integration (`svelte-apexcharts`), server-side KPI aggregations, and form actions (`?/sync`). (Missing: auth, direct upload actions).
 - **Database Connection (`src/lib/server/db/index.ts`)**: `neon(env.DATABASE_URL)` via `$env/dynamic/private`. Throws on start if `DATABASE_URL` missing. `schema` passed to `drizzle()` for relational queries.
 - **Migration Pipeline (`web/scripts/migrate-data.ts`)**: Loads `web/.env`, opens SQLite via `better-sqlite3`, selects all rows, inserts to Neon Postgres in chunks of 500 (avoiding payload/timeout limits) using `.onConflictDoNothing()` for idempotency. No automated hook from Python sync exists yet.
 - **Routes & Behavioral Analysis**:
   - `src/routes/+layout.svelte`: Sidebar + top header shell. Links: Dashboard (`/`), Sales (`/sales`), Businesses (`/businesses`), Settings (`/settings`). Uses runes (`let { children } = $props()`). Mock search bar & avatar. Static active nav styling on Dashboard link.
-  - `src/routes/+page.svelte` (Home): Mock UI/placeholder. Hardcoded stats (`$124,500`), static CSS bar chart, mock "Download Report" button.
+  - `src/routes/+page.server.ts` & `+page.svelte` (Home): Complete Executive Overview Dashboard. Server load parses URL params (`?start&end`) for Drizzle `between` filtering and aggregates KPIs (Net Payout, Volume, Retained %, per-channel stats). Svelte 5 runes UI powers 7 enterprise ApexCharts (Revenue Trends, Channel Mix, P&L Combo, Expense Donut, Hourly Velocity, Weekly Performance, Monthly Contribution) and live ETL sync form simulation.
   - `src/routes/sales/+page.server.ts` & `+page.svelte`: Loads 50 recent orders (`orderBy(desc(orders.order_date)).limit(50)`). Displays Order ID, Date, Channel badge (Swiggy orange, Zomato red, Counter blue), Type, Status dot (green for `delivered`/`printed`), Grand Total. Gaps vs legacy: no pagination, no channel/status filters, no search, no date range, no net payout column.
   - `src/routes/businesses/+page.server.ts` & `+page.svelte`: Loads 50 recent `income_register` rows. Displays Swiggy/Zomato payout, Cash, Fed+Yes bank, Total Income. Gaps vs legacy: no expenses/P&L view, no date filtering, named "Businesses" but displays income register.
   - *Notable Absences*: `/settings` is linked but 404; no `+server.ts` API routes (all data access is SSR `load`).
@@ -164,14 +187,14 @@ npm run db:generate; npm run db:migrate; npm run db:studio # Drizzle management
 
 ## 10. Roadmap, Known Limitations & Troubleshooting
 ### Web Roadmap & Settings Proposal (`docs/settings_tab_proposal.md`)
-- **P0**: Automate SQLite → Postgres sync post-import; replace placeholder home dashboard with real KPIs; manual upload for channels + register in Settings tab (no credentials required).
+- **P0**: Automate SQLite → Postgres sync post-import; manual upload for channels + register in Settings tab (no credentials required). Executive Overview Home dashboard completed in Phase 2.
 - **P1**: Port reconciliation and economics views; implement `/settings` tab (move Gmail/Sheets config from `.env` to UI + `settings.json`).
 - **P2**: Deprecate FastAPI REST layer once parity reached; dual-write ingest directly to Postgres; data purge, DB export/import, scheduled sync.
 - **P3**: Display preferences, channel white-labeling.
 *Planned Endpoints*: `/api/settings`, `/api/upload/{channel}`, `/api/data/purge/{channel}`.
 
 ### Current Limitations Summary
-Hardcoded ingest config (Legacy); full register replace on import; no auth in either stack; dual DB sync is manual (`migrate-data.ts`); incomplete web feature parity (MVP tables only); Counter item parsing comma-split (not exposed in web); single restaurant scope; `/settings` route 404 in web.
+Hardcoded ingest config (Legacy); full register replace on import; no auth in either stack; dual DB sync is manual (`migrate-data.ts`); incomplete web feature parity (Home overview and MVP tables complete; settings tab planned); Counter item parsing comma-split (not exposed in web); single restaurant scope; `/settings` route 404 in web.
 
 ### Troubleshooting Guide
 - **"Database file not found" in UI**: No sync run yet or wrong path → Run `python import_sales.py` or click Sync Data.
@@ -220,26 +243,36 @@ bistro-board/
 │       └── style.css               # Vanilla CSS themes (light, dark, color) & layout
 │
 ├── web/                            # Modern Web Stack (SvelteKit 5 + Drizzle + Neon)
-│   ├── package.json                # Node dependencies & scripts (dev, build, db:push)
+│   ├── package.json                # Node dependencies & scripts (dev, build, db:push, test)
 │   ├── vite.config.ts              # Vite + SvelteKit plugin config (runes mode forced)
+│   ├── vitest.config.ts            # Vitest test runner config
 │   ├── drizzle.config.ts           # Drizzle Kit config for Neon PostgreSQL
 │   ├── .env                        # Runtime config containing DATABASE_URL (gitignored)
 │   ├── scripts/
-│   │   └── migrate-data.ts         # Seeding script: one-way sync from SQLite to Neon Postgres
+│   │   ├── migrate-data.ts         # Seeding script: one-way sync from SQLite to Neon Postgres
+│   │   └── seed-channels.ts        # Channel seeding: inserts default Counter/Swiggy/Zomato config
 │   └── src/
 │       ├── app.css                 # Global CSS design tokens & utilities
-│       ├── lib/server/db/
-│       │   ├── index.ts            # Neon HTTP Drizzle client singleton
-│       │   └── schema.ts           # Drizzle table definitions (orders, payments, expenses, income)
+│       ├── lib/
+│       │   ├── server/
+│       │   │   ├── config.ts       # Configuration service: getAllChannels(), getChannelById()
+│       │   │   └── db/
+│       │   │       ├── index.ts    # Neon HTTP Drizzle client singleton
+│       │   │       ├── schema.ts   # Drizzle table definitions (channels, orders, payments, expenses, income)
+│       │   │       └── seed-data.ts# Default channel data (shared between seed script and tests)
+│       │   └── utils/
+│       │       └── chart-helpers.ts# Charting utilities: formatCurrency, generateColors, ApexCharts options
 │       └── routes/
-│           ├── +layout.svelte      # Main app shell, sidebar navigation, header
-│           ├── +page.svelte        # Home dashboard UI (placeholder metrics)
+│           ├── +layout.server.ts   # Layout load: injects active channels into all routes
+│           ├── +layout.svelte      # Main app shell, dynamic sidebar navigation with channel dots
+│           ├── +page.server.ts     # Server load: parses date filters, aggregates KPIs & chart series
+│           ├── +page.svelte        # Home dashboard UI (Executive Overview with ApexCharts)
 │           ├── sales/
 │           │   ├── +page.server.ts # Server load function: fetches 50 recent orders
-│           │   └── +page.svelte    # Order journal table UI
+│           │   └── +page.svelte    # Order journal table UI with dynamic channel badges
 │           └── businesses/
 │               ├── +page.server.ts # Server load function: fetches 50 recent income register rows
-│               └── +page.svelte    # Daily income ledger table UI
+│               └── +page.svelte    # Daily income ledger table UI with dynamic channel headers
 │
 ├── docs/                           # Documentation & Specifications
 │   ├── PROJECT_GUIDE.md            # This architectural guide & reference

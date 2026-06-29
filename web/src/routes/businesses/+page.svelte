@@ -1,10 +1,22 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	let { data } = $props();
-	const { ledger } = data;
+	const ledger = $derived(data.ledger);
+
+	// Build a lookup from channel ID → channel config
+	const channelMap = $derived(
+		Object.fromEntries((page.data.channels ?? []).map((c: { id: string; name: string; color: string }) => [c.id, c]))
+	);
+
+	// Channel display names for income register columns (fallback to default if not in config)
+	const swiggyLabel = $derived(channelMap['swiggy']?.name ?? 'Swiggy');
+	const zomatoLabel = $derived(channelMap['zomato']?.name ?? 'Zomato');
+	const swiggyColor = $derived(channelMap['swiggy']?.color ?? '#f97316');
+	const zomatoColor = $derived(channelMap['zomato']?.color ?? '#ef4444');
 </script>
 
 <svelte:head>
-	<title>Businesses Ledger - Philos MVP</title>
+	<title>Business Ledger - Bistro Board</title>
 </svelte:head>
 
 <div class="page-container">
@@ -19,8 +31,8 @@
 				<tr>
 					<th>Date</th>
 					<th>Day</th>
-					<th class="text-right">Swiggy</th>
-					<th class="text-right">Zomato</th>
+					<th class="text-right" style:color={swiggyColor}>{swiggyLabel}</th>
+					<th class="text-right" style:color={zomatoColor}>{zomatoLabel}</th>
 					<th class="text-right">Cash</th>
 					<th class="text-right">Bank (Fed/Yes)</th>
 					<th class="text-right highlight">Total Income</th>

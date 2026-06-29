@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
-	let { children } = $props();
+	import { page } from '$app/state';
+	let { children, data } = $props();
 </script>
 
 <svelte:head>
@@ -11,13 +12,29 @@
 	<!-- Sidebar -->
 	<aside class="sidebar card">
 		<div class="logo">
-			<h2>Philos</h2>
+			<h2>Bistro Board</h2>
 		</div>
 		<nav>
-			<a href="/" class="nav-item active">Dashboard</a>
-			<a href="/sales" class="nav-item">Sales</a>
-			<a href="/businesses" class="nav-item">Businesses</a>
-			<a href="/settings" class="nav-item">Settings</a>
+			<a href="/" class="nav-item" class:active={page.url.pathname === '/'}>Dashboard</a>
+			<a href="/sales" class="nav-item" class:active={page.url.pathname === '/sales'}>Sales</a>
+			<a href="/businesses" class="nav-item" class:active={page.url.pathname === '/businesses'}>Businesses</a>
+
+			{#if data.channels && data.channels.length > 0}
+				<div class="nav-section-label">Channels</div>
+				{#each data.channels as channel}
+					<a
+						href="/sales?channel={channel.id}"
+						class="nav-item channel-item"
+						class:active={page.url.searchParams.get('channel') === channel.id}
+					>
+						<span class="channel-dot" style:background-color={channel.color}></span>
+						{channel.name}
+					</a>
+				{/each}
+			{/if}
+
+			<div class="nav-section-label">System</div>
+			<a href="/settings" class="nav-item" class:active={page.url.pathname === ('/settings' as string)}>Settings</a>
 		</nav>
 	</aside>
 
@@ -92,6 +109,30 @@
 		background: var(--bg-secondary);
 		color: var(--accent-primary);
 		font-weight: 600;
+	}
+
+	.nav-section-label {
+		font-size: 0.7rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--text-secondary);
+		opacity: 0.6;
+		padding: 1rem 1rem 0.25rem;
+		margin-top: 0.25rem;
+	}
+
+	.channel-item {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.channel-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		flex-shrink: 0;
 	}
 
 	.main-content {

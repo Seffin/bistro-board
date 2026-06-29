@@ -1,10 +1,20 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	let { data } = $props();
 	const orders = $derived(data.orders);
+
+	// Build a lookup map from channel name → channel config (color, id, etc.)
+	const channelMap = $derived(
+		Object.fromEntries((page.data.channels ?? []).map((c: { name: string; color: string; id: string }) => [c.name, c]))
+	);
+
+	function getChannelColor(channelName: string): string {
+		return channelMap[channelName]?.color ?? '#6b7280';
+	}
 </script>
 
 <svelte:head>
-	<title>Sales - Philos MVP</title>
+	<title>Sales - Bistro Board</title>
 </svelte:head>
 
 <div class="page-container">
@@ -31,7 +41,11 @@
 						<td class="font-medium">{order.original_order_id}</td>
 						<td class="text-muted">{new Date(order.order_date).toLocaleString()}</td>
 						<td>
-							<span class="badge" class:badge-swiggy={order.channel === 'Swiggy'} class:badge-zomato={order.channel === 'Zomato'} class:badge-counter={order.channel === 'Counter'}>
+							<span
+								class="badge"
+								style:color={getChannelColor(order.channel)}
+								style:background-color="{getChannelColor(order.channel)}20"
+							>
 								{order.channel}
 							</span>
 						</td>
@@ -119,13 +133,7 @@
 		text-transform: uppercase;
 	}
 
-	.badge-swiggy { background-color: #fc801920; color: #fc8019; }
-	.badge-zomato { background-color: #cb202d20; color: #cb202d; }
-	.badge-counter { background-color: #2b6cb020; color: #2b6cb0; }
-
-	:global([data-theme='dark']) .badge-swiggy { background-color: #fc801940; color: #ffb073; }
-	:global([data-theme='dark']) .badge-zomato { background-color: #cb202d40; color: #ff858d; }
-	:global([data-theme='dark']) .badge-counter { background-color: #2b6cb040; color: #90cdf4; }
+	/* Channel badge colors are now set dynamically via inline style from config */
 
 	.status-dot {
 		display: inline-block;
