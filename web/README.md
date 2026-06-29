@@ -13,10 +13,11 @@ This is the modern web frontend and serverless backend for **Bistro Board** (Phi
 
 ## 🚀 Key Features & Routes
 
-- **`/` (Dashboard Home)**: Executive Overview featuring dynamic KPI cards, Theme System tabs, and 7 interactive ApexCharts (Revenue Trends, Channel Mix, P&L Combo, Expense Donut, Hourly Velocity, Weekly Performance, and Monthly Contribution). Includes interactive Date Range filtering and live ETL Sync simulation.
-- **`/sales` (Order Journal)**: Displays the 50 most recent orders across Counter POS, Swiggy, and Zomato with real-time payment status and channel badges.
-- **`/businesses` (Income Register)**: Displays recent daily income ledger rows, including cash, bank deposits, and platform payouts.
-- **`/settings` (Planned)**: Channel management, manual data uploads, and sync schedule configuration.
+- **`/` (Dashboard Home)**: Executive Overview featuring dynamic KPI cards and 7 interactive ApexCharts (Revenue Trends, Channel Mix, P&L Combo, Expense Donut, Hourly Velocity, Weekly Performance, and Monthly Contribution). Includes interactive Date Range and Channel filtering and live ETL Sync simulation.
+- **`/sales` (Order Journal)**: Displays the 50 most recent orders across Counter POS, Swiggy, and Zomato with real-time payment status, dynamic channel badges, and filtering.
+- **`/businesses` (Business Ledger & Income)**: Displays recent daily income ledger rows, including cash, bank deposits, and platform payouts.
+- **`/settings` (Admin Configuration)**: Dynamic configuration for Active Channels, Manual File Upload processing, Data sync schedules, and UI Theme control.
+- **`/login` & `/register`**: Secure session-based authentication layer powered by bcrypt password hashing and HTTP-only cookies.
 
 ---
 

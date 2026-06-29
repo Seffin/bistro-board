@@ -168,7 +168,7 @@ After deployment, verify:
 | Issue | Solution |
 |-------|----------|
 | "Database connection failed" | Check `DATABASE_URL` env var, ensure Neon project is active |
-| "Authentication not configured" | Set `ADMIN_USER` and `ADMIN_PASSWORD_HASH` env vars |
+| "Invalid username or password" | Ensure you have registered an account at `/register` or verify your credentials |
 | Login loop (keeps redirecting to /login) | Verify `SESSION_SECRET` is set, check cookie domain settings |
 | Sync endpoint fails | Python scripts don't run on Vercel — use local cron or GitHub Actions |
 | Blank charts/no data | Run data import scripts against the production database |
