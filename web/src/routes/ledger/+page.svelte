@@ -1,6 +1,7 @@
 <script lang="ts">
 	import DateRangeHeader from '$lib/components/DateRangeHeader.svelte';
 	import KPICard from '$lib/components/KPICard.svelte';
+	import { page } from '$app/state';
 
 	let { data } = $props();
 	const ledger = $derived(data.ledger);
@@ -60,7 +61,17 @@
 	{#if ledger.daily_breakdown.length > 0}
 		<!-- Daily Breakdown Table -->
 		<div class="card table-card">
-			<h3>Daily Income Breakdown</h3>
+			<div class="table-header-row">
+				<h3>Daily Income Breakdown</h3>
+				<a href={`/api/export/ledger${page.url.search}`} class="btn btn-outline download-btn" download>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+						<polyline points="7 10 12 15 17 10"></polyline>
+						<line x1="12" y1="15" x2="12" y2="3"></line>
+					</svg>
+					Download CSV
+				</a>
+			</div>
 			<div class="table-container">
 				<table>
 					<thead>
@@ -171,10 +182,28 @@
 	}
 
 	.table-card h3 {
-		font-size: 1.1rem;
-		font-weight: 600;
-		color: var(--text-primary);
 		margin-bottom: 1.5rem;
+		font-size: 1.25rem;
+		font-weight: 600;
+	}
+
+	.table-header-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1.5rem;
+	}
+
+	.table-header-row h3 {
+		margin-bottom: 0;
+	}
+
+	.download-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.875rem;
+		padding: 0.375rem 0.75rem;
 	}
 
 	.table-container {

@@ -25,6 +25,7 @@
 		"@sveltejs/adapter-auto": "^7.0.1",
 		"@sveltejs/kit": "^2.63.0",
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
+		"@types/bcryptjs": "^2.4.6",
 		"@types/better-sqlite3": "^7.6.13",
 		"@types/node": "^24",
 		"better-sqlite3": "^12.11.1",
@@ -51,6 +52,9 @@
 	},
 	"dependencies": {
 		"apexcharts": "^5.15.2",
+		"bcryptjs": "^3.0.3",
+		"node-cache": "^5.1.2",
+		"pino": "^10.3.1",
 		"svelte-apexcharts": "^1.0.2"
 	}
 }

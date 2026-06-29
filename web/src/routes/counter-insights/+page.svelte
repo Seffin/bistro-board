@@ -4,12 +4,13 @@
 	import KPICard from '$lib/components/KPICard.svelte';
 	import ApexCharts from 'apexcharts';
 	import { onMount } from 'svelte';
+	import type { ApexOptions } from 'apexcharts';
 
 	let { data } = $props();
 	const insights = $derived(data.insights);
 
-	let topItemsChartContainer: HTMLDivElement;
-	let paymentMixChartContainer: HTMLDivElement;
+	let topItemsChartContainer: HTMLDivElement | undefined = $state();
+	let paymentMixChartContainer: HTMLDivElement | undefined = $state();
 	let selectedItem: (typeof insights.top_items)[0] | null = $state(null);
 
 	onMount(() => {
@@ -24,7 +25,7 @@
 	function renderTopItemsChart() {
 		if (!topItemsChartContainer) return;
 
-		const options = {
+		const options: ApexOptions = {
 			chart: {
 				type: 'bar',
 				height: 400,
@@ -62,7 +63,7 @@
 	function renderPaymentMixChart() {
 		if (!paymentMixChartContainer) return;
 
-		const options = {
+		const options: ApexOptions = {
 			chart: {
 				type: 'donut',
 				height: 350

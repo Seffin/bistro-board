@@ -1,17 +1,17 @@
-# Generic POS & Aggregator Dashboard Template
+# Bistro Board
 
-A pluggable, configuration-driven business analytics dashboard for multi-channel restaurants. It integrates Counter POS, Swiggy, and Zomato sales reports alongside general business ledgers (Expenses and Income register).
+A pluggable, configuration-driven business analytics dashboard for multi-channel restaurants. Built with **SvelteKit 5**, **Drizzle ORM**, and **Neon PostgreSQL**, it integrates Counter POS, Swiggy, and Zomato sales reports alongside business ledgers (Expenses and Income register).
 
 ---
 
 ## 📂 Directory Layout
 
-* **`dashboard/`**: FastAPI python backend and vanilla HTML/CSS/JS frontend dashboard.
+* **`web/`**: SvelteKit application — the sole frontend and backend.
 * **`sales_reports/`**: Excel report landing directories:
   * `counter/`: Daily register sheets from POS.
   * `swiggy/`: Weekly settlement annexure files.
   * `zomato/`: Weekly order level payout sheets.
-* **`docs/`**: Kakkanad Business Register Excel ledger folder.
+* **`docs/`**: Kakkanad Business Register Excel ledger and project documentation.
 * **`fetch_emails.py`**: Auto-downloads reports matching custom subjects from Gmail.
 * **`download_sheet.py`**: Syncs Google Sheets ledgers down to local files using a Service Account JSON.
 * **`import_sales.py`**: Parses Excel reports into a unified database schema.
@@ -21,10 +21,8 @@ A pluggable, configuration-driven business analytics dashboard for multi-channel
 
 ## 🚀 Getting Started
 
-### 1. Setup Environment
-Open your terminal inside this directory and set up a Python virtual environment:
+### 1. Setup Python Environment (for data import scripts)
 ```bash
-# Create virtual environment
 python -m venv venv
 
 # Activate on Windows (PowerShell)
@@ -32,38 +30,52 @@ venv\Scripts\Activate.ps1
 
 # Activate on Mac/Linux
 source venv/bin/activate
-```
 
-### 2. Install Dependencies
-Install all package dependencies defined in `pyproject.toml`:
-```bash
 pip install -e .
 ```
 
-### 3. Configure Local Credentials
-1. Duplicate `.env.example` and rename the copy to `.env`.
-2. Add your Gmail credentials (with an App Password) and your Google Sheets ID:
-   ```env
-   GMAIL_USER=your-account@gmail.com
-   GMAIL_APP_PASSWORD=your16charpassword
-   GOOGLE_SHEET_ID=your_sheet_id
-   ```
-3. Place your Service Account JSON key inside the root directory and name it `google_credentials.json`.
+### 2. Setup SvelteKit Web App
+```bash
+cd web
+npm install
+```
+
+### 3. Configure Environment Variables
+1. Copy `web/.env.example` to `web/.env` and fill in the values:
+   - `DATABASE_URL`: Your Neon PostgreSQL connection string
+   - `ADMIN_USER`: Admin username for login
+   - `ADMIN_PASSWORD_HASH`: Bcrypt hash of the admin password
+   - `SESSION_SECRET`: A random secret for signing session cookies
+2. For Python data import, create a root `.env` with Gmail/Google credentials.
+
+### 4. Run the Application
+```bash
+cd web
+npm run dev
+```
+
+Open `http://localhost:5173` and log in with your configured credentials.
+
+### 5. Push Database Schema
+```bash
+cd web
+npm run db:push
+```
 
 ---
 
-## 📊 Testing with Seed Data
+## 📊 Features
 
-The project contains a pre-generated **Sample Seed Dataset** inside `sales_reports/` and `docs/` representing mock orders and ledger entries for **June 2026**.
+- **Executive Dashboard**: KPIs, revenue trends, channel mix, P&L, expenses, hourly velocity, weekly performance
+- **Detailed Analytics**: Platform Economics, Counter Insights, Order Journal, Business Ledger, Reconciliation, Payout Analytics, Promo Impact
+- **Settings UI**: Channel CRUD, manual file upload, credential management
+- **Authentication**: Session-based login with bcrypt password hashing
+- **Caching**: In-memory TTL cache for expensive dashboard queries
+- **Data Export**: CSV downloads for all table views
+- **Structured Logging**: pino-based request and error logging
 
-To test the system immediately:
-1. Start the server:
-   ```bash
-   python dashboard/main.py
-   ```
-2. Open your web browser to `http://127.0.0.1:8000`.
-3. In the date range inputs (top-right), select **`2026-06-01` to `2026-06-30`** (the range of the mock data).
-4. Click the **Sync Data** button.
-5. Watch the real-time progress console sync and import the mock records. 
+---
 
-*Note: Since there are no live credentials configured yet, the sync will log warnings for Gmail/Google Sheets and seamlessly parse the pre-loaded local seed workbooks.*
+## 📦 Deployment
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for complete deployment instructions (Vercel + Neon PostgreSQL).

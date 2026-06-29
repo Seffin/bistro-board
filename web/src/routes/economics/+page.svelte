@@ -18,10 +18,13 @@
 		return channelColorMap[channelId] || '#6b7280';
 	}
 
+	let selectedChannel = $state(economics.channels[0]?.channel_id || '');
+	import type { ApexOptions } from 'apexcharts';
+
 	// Chart instances
-	let commissionChartContainer: HTMLDivElement;
-	let payoutRatioChartContainer: HTMLDivElement;
-	let leakageChartContainer: HTMLDivElement;
+	let commissionChartContainer: HTMLDivElement | undefined = $state();
+	let payoutRatioChartContainer: HTMLDivElement | undefined = $state();
+	let leakageChartContainer: HTMLDivElement | undefined = $state();
 
 	onMount(() => {
 		if (economics.channels.length > 0) {
@@ -34,7 +37,7 @@
 	function renderCommissionChart() {
 		if (!commissionChartContainer) return;
 
-		const options = {
+		const options: ApexOptions = {
 			chart: { type: 'bar', height: 300 },
 			series: [
 				{
@@ -61,7 +64,7 @@
 	function renderPayoutRatioChart() {
 		if (!payoutRatioChartContainer) return;
 
-		const options = {
+		const options: ApexOptions = {
 			chart: { type: 'bar', height: 300 },
 			series: [
 				{
@@ -88,7 +91,7 @@
 	function renderLeakageChart() {
 		if (!leakageChartContainer) return;
 
-		const options = {
+		const options: ApexOptions = {
 			chart: { type: 'bar', height: 300 },
 			series: [
 				{

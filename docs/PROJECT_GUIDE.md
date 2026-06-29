@@ -459,6 +459,37 @@ All Svelte components use Svelte 5 runes for reactive state:
 - ✅ Channel configuration seeded (`npx tsx scripts/seed-channels.ts`)
 - ✅ Environment variables set (`.env` with `DATABASE_URL`)
 
+## 13. Phase 5: Production Hardening & Deployment (✅ COMPLETE)
+
+The final phase transitioned the application from a development prototype to a production-ready system.
+
+### Security & Authentication
+- Replaced the unprotected dashboard with a session-based authentication system.
+- Implemented `bcryptjs` for secure password hashing.
+- Admin credentials are provided via `ADMIN_USER` and `ADMIN_PASSWORD_HASH` environment variables.
+- Routes are protected via SvelteKit hooks (`hooks.server.ts`), redirecting unauthenticated users to `/login`.
+
+### Performance Optimization
+- Added an in-memory TTL caching layer using `node-cache`.
+- Wrapped expensive aggregate queries on the Executive Dashboard with a 5-minute cache.
+- The cache is automatically invalidated when a successful data sync occurs (`/api/sync`).
+
+### Observability & Error Handling
+- Integrated `pino` for structured, JSON-based server logging, capturing request durations and errors.
+- Added global `try/catch` boundaries in load functions.
+- Built a global, accessible Toast notification system (`$lib/stores/toast.ts`) with typed variants (success/error/info/warning) to inform users of background sync status and errors.
+
+### Legacy Deprecation & Export
+- Completely removed the FastAPI backend (`dashboard/` directory) as full feature parity was achieved in SvelteKit.
+- Implemented robust CSV generation for data export across Orders, Ledger, and Reconciliation views.
+
+### Deployment Architecture
+- Created `vercel.json` and a comprehensive `docs/DEPLOYMENT.md`.
+- Vercel handles the SvelteKit frontend/backend.
+- Neon PostgreSQL serves as the serverless database.
+- Python ETL scripts are designated to run via external cron jobs or GitHub Actions to bypass Vercel's lack of a Python runtime.
+
 ### Related Documentation
 - [Postgres Setup Guide](postgres_setup.md) — Instructions for Neon database configuration
 - [Settings Tab Proposal](settings_tab_proposal.md) — Future roadmap for Settings features
+- [Deployment Guide](DEPLOYMENT.md) — Instructions for deploying to Vercel and Neon

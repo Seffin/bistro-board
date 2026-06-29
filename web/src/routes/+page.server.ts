@@ -2,10 +2,15 @@ import { db } from '$lib/server/db';
 import { orders, expenses } from '$lib/server/db/schema';
 import { getAllChannels } from '$lib/server/config';
 import { between } from 'drizzle-orm';
+import { getCached } from '$lib/server/cache';
 
 export async function load({ url }: { url?: URL } = {}) {
 	const start = url ? url.searchParams.get('start') : null;
 	const end = url ? url.searchParams.get('end') : null;
+
+	const cacheKey = `dashboard:${start || 'all'}:${end || 'all'}`;
+
+	return getCached(cacheKey, async () => {
 	const activeChannels = await getAllChannels();
 
 	const allOrders =
@@ -277,6 +282,7 @@ export async function load({ url }: { url?: URL } = {}) {
 			}
 		}
 	};
+	}); // end getCached
 }
 
 export const actions = {

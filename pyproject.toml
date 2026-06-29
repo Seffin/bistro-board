@@ -1,14 +1,12 @@
 [project]
-name = "philos-dashboard"
-version = "0.1.0"
-description = "Business dashboard for Philos integrating Counter, Swiggy, and Zomato sales reports"
+name = "bistro-board"
+version = "0.2.0"
+description = "Multi-channel restaurant analytics platform — data import scripts"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "pandas>=2.0.0",
     "openpyxl>=3.1.0",
-    "fastapi>=0.100.0",
-    "uvicorn>=0.22.0",
     "google-auth>=2.0.0",
     "requests>=2.20.0",
     "python-dotenv>=1.0.0"
@@ -17,7 +15,3 @@ dependencies = [
 [build-system]
 requires = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
-
-[tool.setuptools]
-packages = ["dashboard"]
-

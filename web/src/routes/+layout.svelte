@@ -1,12 +1,15 @@
 <script lang="ts">
 	import '../app.css';
 	import { page } from '$app/state';
+	import Toast from '$lib/components/Toast.svelte';
 	let { children, data } = $props();
 </script>
 
 <svelte:head>
-	<title>Philos | Business Portal</title>
+	<title>Bistro Board | Business Portal</title>
 </svelte:head>
+
+<Toast />
 
 <div class="app-container">
 	<!-- Sidebar -->
@@ -45,6 +48,13 @@
 				<input type="text" placeholder="Search..." />
 			</div>
 			<div class="user-profile">
+				<a href="/logout" class="logout-link" title="Sign out">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+						<polyline points="16 17 21 12 16 7" />
+						<line x1="21" y1="12" x2="9" y2="12" />
+					</svg>
+				</a>
 				<div class="avatar">A</div>
 			</div>
 		</header>
@@ -194,5 +204,22 @@
 	.page-content {
 		padding: 2rem;
 		flex: 1;
+	}
+
+	.logout-link {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		border-radius: 50%;
+		color: var(--text-secondary);
+		text-decoration: none;
+		transition: all 0.2s ease;
+	}
+
+	.logout-link:hover {
+		background: var(--bg-secondary);
+		color: #ef4444;
 	}
 </style>

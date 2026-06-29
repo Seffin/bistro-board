@@ -1,6 +1,8 @@
 import { db } from '$lib/server/db';
 import { orders } from '$lib/server/db/schema';
 import { and, between, ilike, or, desc } from 'drizzle-orm';
+import { error } from '@sveltejs/kit';
+import logger from '$lib/server/logger';
 
 export interface OrderRecord {
 	order_id: string;
@@ -32,6 +34,7 @@ export const load = async ({
 }: {
 	url: URL;
 }): Promise<{ data: OrdersData }> => {
+  try {
 	const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
 	const pageSize = 50;
 
@@ -118,4 +121,8 @@ export const load = async ({
 			}
 		}
 	};
+  } catch (err) {
+	logger.error({ err, path: '/orders' }, 'Failed to load orders');
+	throw error(500, 'Failed to load orders. Please try again later.');
+  }
 };

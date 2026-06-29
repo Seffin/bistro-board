@@ -15,7 +15,7 @@
 	const availableStatuses = ['delivered', 'pending', 'cancelled', 'failed'];
 
 	function updateFilters() {
-		const params = new URLSearchParams($page.url.searchParams);
+		const params = new URLSearchParams(page.url.searchParams);
 
 		if (searchQuery) {
 			params.set('search', searchQuery);
@@ -71,7 +71,7 @@
 	}
 
 	function goToPage(pageNum: number) {
-		const params = new URLSearchParams($page.url.searchParams);
+		const params = new URLSearchParams(page.url.searchParams);
 		params.set('page', pageNum.toString());
 		goto(`?${params.toString()}`);
 	}
@@ -143,9 +143,19 @@
 	<div class="card filters-card">
 		<div class="filters-header">
 			<h3>Filters</h3>
-			{#if selectedChannels.length > 0 || selectedStatuses.length > 0 || searchQuery}
-				<button class="btn-secondary" onclick={clearFilters}>Clear All</button>
-			{/if}
+			<div class="filters-actions">
+				<a href={`/api/export/orders${page.url.search}`} class="btn btn-outline download-btn" download>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+						<polyline points="7 10 12 15 17 10"></polyline>
+						<line x1="12" y1="15" x2="12" y2="3"></line>
+					</svg>
+					Download CSV
+				</a>
+				{#if selectedChannels.length > 0 || selectedStatuses.length > 0 || searchQuery}
+					<button class="btn btn-secondary" onclick={clearFilters}>Clear All</button>
+				{/if}
+			</div>
 		</div>
 
 		<!-- Search Box -->
@@ -337,6 +347,22 @@
 		justify-content: space-between;
 		align-items: center;
 		margin-bottom: 1.5rem;
+		padding-bottom: 1rem;
+		border-bottom: 1px solid var(--border-color);
+	}
+
+	.filters-actions {
+		display: flex;
+		gap: 0.75rem;
+		align-items: center;
+	}
+
+	.download-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.875rem;
+		padding: 0.375rem 0.75rem;
 	}
 
 	.filters-header h3 {

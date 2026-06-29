@@ -1,6 +1,7 @@
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { invalidateAll } from '$lib/server/cache';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -70,6 +71,10 @@ export const POST = async () => {
 				await runCommand('python', ['import_register.py'], projectRoot);
 				
 				sendLog('Sync Pipeline Completed Successfully!');
+				
+				// Invalidate all caches so next page load gets fresh data
+				invalidateAll();
+				sendLog('Cache invalidated.');
 				
 				// Send a special termination event
 				const endChunk = `data: ${JSON.stringify({ done: true })}\n\n`;
