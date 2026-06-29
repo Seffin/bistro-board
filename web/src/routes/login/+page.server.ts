@@ -24,9 +24,16 @@ export const actions: Actions = {
 			return fail(400, { error: 'Username and password are required.', username });
 		}
 
-		const adminUser = env.ADMIN_USER;
-		const adminPasswordHash = env.ADMIN_PASSWORD_HASH;
+		const adminUser = env.ADMIN_USER?.trim();
+		let adminPasswordHash = env.ADMIN_PASSWORD_HASH?.trim();
 		const sessionSecret = env.SESSION_SECRET || 'dev-fallback-secret-change-me';
+
+		// Clean quotes if Vite passes them literally
+		if (adminPasswordHash?.startsWith("'") && adminPasswordHash?.endsWith("'")) {
+			adminPasswordHash = adminPasswordHash.slice(1, -1);
+		} else if (adminPasswordHash?.startsWith('"') && adminPasswordHash?.endsWith('"')) {
+			adminPasswordHash = adminPasswordHash.slice(1, -1);
+		}
 
 		if (!adminUser || !adminPasswordHash) {
 			console.error('[AUTH] ADMIN_USER or ADMIN_PASSWORD_HASH not configured in environment.');

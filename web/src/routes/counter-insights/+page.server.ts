@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import { orders, order_payments } from '$lib/server/db/schema';
-import { eq, and, between } from 'drizzle-orm';
+import { eq, and, between, inArray } from 'drizzle-orm';
 
 export interface TopItem {
 	name: string;
@@ -83,13 +83,16 @@ export const load = async ({ url }: { url: URL }): Promise<{ insights: CounterIn
 	}
 
 	// Fetch payment methods for counter orders
-	const paymentData = await db
-		.select({
-			payment_type: order_payments.payment_type,
-			count: order_payments.payment_id
-		})
-		.from(order_payments)
-		.where(order_payments.order_id.inArray(validOrders.map((o) => o.order_id)));
+	let paymentData: { payment_type: string | null; count: string }[] = [];
+	if (validOrders.length > 0) {
+		paymentData = await db
+			.select({
+				payment_type: order_payments.payment_type,
+				count: order_payments.payment_id
+			})
+			.from(order_payments)
+			.where(inArray(order_payments.order_id, validOrders.map((o) => o.order_id)));
+	}
 
 	// Aggregate payment methods
 	const paymentCounts: Record<string, number> = {};
