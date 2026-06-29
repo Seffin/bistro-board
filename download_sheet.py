@@ -4,13 +4,28 @@ from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 from dotenv import load_dotenv
 
+import json
+from pathlib import Path
+
 # Load local environment settings
 load_dotenv()
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CREDENTIALS_FILE = os.path.join(SCRIPT_DIR, "google_credentials.json")
 DEST_PATH = os.path.join(SCRIPT_DIR, r"docs\Kakkanad Business Register.xlsx")
-GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "")
+
+def load_config():
+    config_path = Path(__file__).parent / "settings.json"
+    if not config_path.exists():
+        print(f"Error: Config file not found at {config_path}")
+        import sys
+        sys.exit(1)
+    with open(config_path, "r") as f:
+        return json.load(f)
+
+config = load_config()
+credentials = config.get("credentials", {})
+GOOGLE_SHEET_ID = credentials.get("GOOGLE_SHEET_ID") or os.getenv("GOOGLE_SHEET_ID", "")
 
 def download_register_sheet(progress_callback=None):
     def log_progress(msg):

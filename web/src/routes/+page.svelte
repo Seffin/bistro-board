@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { THEME_SYSTEM_TABS, getActiveTab } from './navigation-tabs';
+	import { THEME_SYSTEM_TABS } from './navigation-tabs';
 	import { page } from '$app/state';
 	import { enhance } from '$app/forms';
 	import KPICard from '$lib/components/KPICard.svelte';
+	import DateRangeHeader from '$lib/components/DateRangeHeader.svelte';
 	import RevenueTrendsChart from '$lib/components/charts/RevenueTrendsChart.svelte';
 	import ChannelMixChart from '$lib/components/charts/ChannelMixChart.svelte';
 	import ProfitLossChart from '$lib/components/charts/ProfitLossChart.svelte';
@@ -17,38 +18,119 @@
 	const charts = $derived(data.charts);
 
 	// Use URL search param ?tab=... or client-side state via Svelte 5 runes
-	let selectedTab = $state(getActiveTab(page.url.searchParams.get('tab')));
+	let selectedTab = $state('overview'); // Always overview on this page
 
 	function selectTab(id: string) {
-		selectedTab = id;
-		if (typeof window !== 'undefined') {
-			const url = new URL(window.location.href);
-			url.searchParams.set('tab', id);
-			window.history.replaceState({}, '', url);
+		if (id === 'overview') {
+			// Stay on overview
+			selectedTab = id;
+			if (typeof window !== 'undefined') {
+				const url = new URL(window.location.href);
+				url.searchParams.set('tab', id);
+				window.history.replaceState({}, '', url);
+			}
+		} else {
+			// Navigate to specific route, preserving date range
+			if (typeof window !== 'undefined') {
+				const url = new URL(window.location.href);
+				const dateStart = url.searchParams.get('start');
+				const dateEnd = url.searchParams.get('end');
+				
+				let routePath = '/';
+				switch (id) {
+					case 'platform-economics':
+						routePath = '/economics';
+						break;
+					case 'counter-insights':
+						routePath = '/counter-insights';
+						break;
+					case 'order-journal':
+						routePath = '/orders';
+						break;
+					case 'business-ledger':
+						routePath = '/businesses';
+						break;
+					case 'reconciliation':
+						routePath = '/reconciliation';
+						break;
+					case 'payout-analytics':
+						routePath = '/payouts';
+						break;
+					case 'promo-impact':
+						routePath = '/promo';
+						break;
+				}
+				
+				// Build new URL with date range preserved
+				const newUrl = new URL(routePath, window.location.origin);
+				if (dateStart) newUrl.searchParams.set('start', dateStart);
+				if (dateEnd) newUrl.searchParams.set('end', dateEnd);
+				window.location.href = newUrl.toString();
+			}
 		}
 	}
 
 	// Dynamic channel configuration from layout data
 	const channels = $derived(page.data.channels || []);
 
-	// Date Range Picker state
-	let startDate = $state(page.url.searchParams.get('start') || '');
-	let endDate = $state(page.url.searchParams.get('end') || '');
 	let isSyncing = $state(false);
 	let syncMessage = $state('');
+	let syncLogs = $state<string[]>([]);
+	let showLogs = $state(false);
 
-	function applyDateRange(e: Event) {
-		e.preventDefault();
+	function handleDateFilterApply(start: string, end: string) {
 		if (typeof window !== 'undefined') {
-			const url = new URL(window.location.href);
-			if (startDate && endDate) {
-				url.searchParams.set('start', startDate);
-				url.searchParams.set('end', endDate);
-			} else {
-				url.searchParams.delete('start');
-				url.searchParams.delete('end');
+			setTimeout(() => window.location.reload(), 100);
+		}
+	}
+
+	async function startSync() {
+		if (isSyncing) return;
+		isSyncing = true;
+		syncMessage = '';
+		syncLogs = [];
+		showLogs = true;
+
+		try {
+			const res = await fetch('/api/sync', { method: 'POST' });
+			if (!res.ok) throw new Error('Sync failed to start');
+			if (!res.body) throw new Error('ReadableStream not supported');
+
+			const reader = res.body.getReader();
+			const decoder = new TextDecoder();
+
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+
+				const chunk = decoder.decode(value);
+				const lines = chunk.split('\n\n').filter(Boolean);
+
+				for (const line of lines) {
+					if (line.startsWith('data: ')) {
+						const dataStr = line.substring(6);
+						try {
+							const data = JSON.parse(dataStr);
+							if (data.done) {
+								syncMessage = 'Data sync completed successfully';
+								isSyncing = false;
+								setTimeout(() => window.location.reload(), 2000);
+							} else if (data.error) {
+								syncMessage = `Sync Error: ${data.error}`;
+								isSyncing = false;
+							} else if (data.message) {
+								syncLogs.push(data.message);
+								// Trigger reactivity explicitly if needed, but Svelte 5 arrays are deeply reactive by default
+							}
+						} catch (e) {
+							// ignore malformed JSON
+						}
+					}
+				}
 			}
-			window.location.href = url.href; // trigger server reload with query params
+		} catch (err: any) {
+			isSyncing = false;
+			syncMessage = `Sync failed: ${err.message}`;
 		}
 	}
 </script>
@@ -66,41 +148,35 @@
 		</div>
 		<div class="actions-area">
 			<!-- Date Range Picker -->
-			<form class="date-picker-form" onsubmit={applyDateRange}>
-				<div class="date-inputs">
-					<input type="date" bind:value={startDate} class="simple-input" aria-label="Start Date" />
-					<span class="separator">to</span>
-					<input type="date" bind:value={endDate} class="simple-input" aria-label="End Date" />
-				</div>
-				<button type="submit" class="btn btn-secondary">Filter</button>
-			</form>
+			<DateRangeHeader onFilterApply={handleDateFilterApply} />
 
 			<!-- Sync Button -->
-			<form
-				method="POST"
-				action="?/sync"
-				use:enhance={() => {
-					isSyncing = true;
-					syncMessage = '';
-					return async ({ result, update }) => {
-						isSyncing = false;
-						if (result.type === 'success') {
-							syncMessage = (result.data?.message as string) || 'Data sync completed successfully';
-							setTimeout(() => (syncMessage = ''), 5000);
-						}
-						await update();
-					};
-				}}
-			>
-				<button type="submit" class="btn btn-primary" disabled={isSyncing}>
-					{isSyncing ? 'Syncing...' : 'Sync Live Data'}
-				</button>
-			</form>
+			<button class="btn btn-primary" onclick={startSync} disabled={isSyncing}>
+				{isSyncing ? 'Syncing...' : 'Sync Live Data'}
+			</button>
 		</div>
 	</header>
 
-	{#if syncMessage}
-		<div class="sync-banner success card">{syncMessage}</div>
+	{#if showLogs}
+		<div class="sync-console card">
+			<div class="console-header">
+				<h3>Sync Status</h3>
+				<button class="close-btn" onclick={() => showLogs = false}>&times;</button>
+			</div>
+			<div class="console-logs">
+				{#each syncLogs as log}
+					<div class="log-line">{log}</div>
+				{/each}
+				{#if isSyncing}
+					<div class="log-line blinking">Waiting for next step...</div>
+				{/if}
+			</div>
+			{#if syncMessage}
+				<div class="sync-banner {syncMessage.includes('Error') || syncMessage.includes('failed') ? 'error' : 'success'} mt-2">
+					{syncMessage}
+				</div>
+			{/if}
+		</div>
 	{/if}
 
 	<!-- Theme System Tabs Navigation -->
@@ -114,73 +190,66 @@
 
 	<!-- Main Content Area -->
 	<div class="tab-content">
-		{#if selectedTab === 'overview'}
-			<!-- Row 1: Top KPI Cards -->
-			<div class="kpi-row-1">
+		<!-- Row 1: Top KPI Cards -->
+		<div class="kpi-row-1">
+			<KPICard
+				title="Net Payout (Bank Credit)"
+				value={formatCurrency(kpis.netPayout, '₹')}
+				subtitle={`${kpis.revenueRetainedPct.toFixed(1)}% Revenue Retained`}
+			/>
+			<KPICard
+				title="Total Volume"
+				value={kpis.totalVolume.toLocaleString('en-IN')}
+				subtitle={`${kpis.successRatePct.toFixed(1)}% Success Rate`}
+			/>
+		</div>
+
+		<!-- Row 2: Channel-Specific KPI Cards -->
+		<div class="kpi-row-2">
+			{#each channels as channel}
+				{@const stats = kpis.channelStats[channel.name.toLowerCase()] || { grossSales: 0, orderCount: 0, aov: 0 }}
 				<KPICard
-					title="Net Payout (Bank Credit)"
-					value={formatCurrency(kpis.netPayout, '₹')}
-					subtitle={`${kpis.revenueRetainedPct.toFixed(1)}% Revenue Retained`}
+					title={channel.name}
+					accentColor={channel.color}
+					metrics={[
+						{ label: 'Gross Sales', value: formatCurrency(stats.grossSales, '₹', true) },
+						{ label: 'Orders', value: stats.orderCount.toLocaleString('en-IN') },
+						{ label: 'Ticket AOV', value: formatCurrency(stats.aov, '₹') }
+					]}
 				/>
-				<KPICard
-					title="Total Volume"
-					value={kpis.totalVolume.toLocaleString('en-IN')}
-					subtitle={`${kpis.successRatePct.toFixed(1)}% Success Rate`}
-				/>
-			</div>
+			{/each}
+		</div>
 
-			<!-- Row 2: Channel-Specific KPI Cards -->
-			<div class="kpi-row-2">
-				{#each channels as channel}
-					{@const stats = kpis.channelStats[channel.name.toLowerCase()] || { grossSales: 0, orderCount: 0, aov: 0 }}
-					<KPICard
-						title={channel.name}
-						accentColor={channel.color}
-						metrics={[
-							{ label: 'Gross Sales', value: formatCurrency(stats.grossSales, '₹', true) },
-							{ label: 'Orders', value: stats.orderCount.toLocaleString('en-IN') },
-							{ label: 'Ticket AOV', value: formatCurrency(stats.aov, '₹') }
-						]}
-					/>
-				{/each}
+		<!-- Row 3: Revenue Trends & Channel Mix Charts -->
+		<div class="charts-row">
+			<div class="main-chart">
+				<RevenueTrendsChart categories={charts.revenueTrends.categories} series={charts.revenueTrends.series} />
 			</div>
+			<div class="side-chart">
+				<ChannelMixChart categories={charts.channelMix.categories} series={charts.channelMix.series} />
+			</div>
+		</div>
 
-			<!-- Row 3: Revenue Trends & Channel Mix Charts -->
-			<div class="charts-row">
-				<div class="main-chart">
-					<RevenueTrendsChart categories={charts.revenueTrends.categories} series={charts.revenueTrends.series} />
-				</div>
-				<div class="side-chart">
-					<ChannelMixChart categories={charts.channelMix.categories} series={charts.channelMix.series} />
-				</div>
+		<!-- Row 4: Profit & Loss Trend & Expense Breakdown -->
+		<div class="charts-row">
+			<div class="main-chart">
+				<ProfitLossChart categories={charts.pnlTrends.categories} series={charts.pnlTrends.series} />
 			</div>
+			<div class="side-chart">
+				<ExpenseBreakdownChart labels={charts.expenseBreakdown.labels} series={charts.expenseBreakdown.series} />
+			</div>
+		</div>
 
-			<!-- Row 4: Profit & Loss Trend & Expense Breakdown -->
-			<div class="charts-row">
-				<div class="main-chart">
-					<ProfitLossChart categories={charts.pnlTrends.categories} series={charts.pnlTrends.series} />
-				</div>
-				<div class="side-chart">
-					<ExpenseBreakdownChart labels={charts.expenseBreakdown.labels} series={charts.expenseBreakdown.series} />
-				</div>
-			</div>
-
-			<!-- Row 5: Hourly Velocity, Weekly Performance, Monthly Contribution -->
-			<div class="charts-grid-3">
-				<HourlyVelocityChart categories={charts.hourlyVelocity.categories} series={charts.hourlyVelocity.series} />
-				<WeeklyPerformanceChart categories={charts.weeklyPerformance.categories} series={charts.weeklyPerformance.series} />
-				<MonthlyContributionChart
-					labels={charts.monthlyContribution.labels}
-					series={charts.monthlyContribution.series}
-					colors={charts.monthlyContribution.colors}
-				/>
-			</div>
-		{:else}
-			<div class="empty-state card">
-				<h3>{THEME_SYSTEM_TABS.find((t) => t.id === selectedTab)?.label}</h3>
-				<p class="text-muted">Detailed analytics for this module will be populated in subsequent phases.</p>
-			</div>
-		{/if}
+		<!-- Row 5: Hourly Velocity, Weekly Performance, Monthly Contribution -->
+		<div class="charts-grid-3">
+			<HourlyVelocityChart categories={charts.hourlyVelocity.categories} series={charts.hourlyVelocity.series} />
+			<WeeklyPerformanceChart categories={charts.weeklyPerformance.categories} series={charts.weeklyPerformance.series} />
+			<MonthlyContributionChart
+				labels={charts.monthlyContribution.labels}
+				series={charts.monthlyContribution.series}
+				colors={charts.monthlyContribution.colors}
+			/>
+		</div>
 	</div>
 </div>
 
@@ -220,38 +289,7 @@
 	}
 
 	.date-picker-form {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		background: var(--bg-primary);
-		padding: 0.5rem 0.75rem;
-		border-radius: var(--border-radius);
-		border: 1px solid var(--border-color);
-	}
-
-	.date-inputs {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.simple-input {
-		background: transparent;
-		border: none;
-		color: var(--text-primary);
-		font-family: inherit;
-		font-size: 0.875rem;
-		outline: none;
-	}
-
-	.simple-input::-webkit-calendar-picker-indicator {
-		filter: invert(0.5);
-		cursor: pointer;
-	}
-
-	.separator {
-		color: var(--text-secondary);
-		font-size: 0.875rem;
+		/* Styles moved to DateRangeHeader.svelte component */
 	}
 
 	.btn {
@@ -302,6 +340,71 @@
 		background: #10b98122;
 		color: #10b981;
 		border: 1px solid #10b98155;
+	}
+
+	.sync-banner.error {
+		background: #ef444422;
+		color: #ef4444;
+		border: 1px solid #ef444455;
+	}
+
+	.mt-2 {
+		margin-top: 1rem;
+	}
+
+	.sync-console {
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-color);
+		display: flex;
+		flex-direction: column;
+	}
+
+	.console-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.75rem 1.5rem;
+		border-bottom: 1px solid var(--border-color);
+		background: var(--bg-tertiary);
+	}
+
+	.console-header h3 {
+		margin: 0;
+		font-size: 0.95rem;
+		font-weight: 600;
+	}
+
+	.close-btn {
+		background: transparent;
+		border: none;
+		color: var(--text-secondary);
+		font-size: 1.25rem;
+		cursor: pointer;
+	}
+
+	.console-logs {
+		padding: 1rem 1.5rem;
+		max-height: 250px;
+		overflow-y: auto;
+		font-family: monospace;
+		font-size: 0.85rem;
+		line-height: 1.5;
+		color: var(--text-secondary);
+	}
+
+	.log-line {
+		margin-bottom: 0.25rem;
+	}
+
+	.blinking {
+		animation: blink 1.5s infinite;
+		opacity: 0.5;
+	}
+
+	@keyframes blink {
+		0% { opacity: 0.2; }
+		50% { opacity: 1; }
+		100% { opacity: 0.2; }
 	}
 
 	.theme-tabs {

@@ -2,10 +2,23 @@ import os
 import sqlite3
 import pandas as pd
 import numpy as np
+import json
+from pathlib import Path
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(SCRIPT_DIR, "philos_sales.db")
 
+def load_config():
+    config_path = Path(__file__).parent / "settings.json"
+    if not config_path.exists():
+        print(f"Error: Config file not found at {config_path}")
+        import sys
+        sys.exit(1)
+    with open(config_path, "r") as f:
+        return json.load(f)
+
+config = load_config()
+channels_config = config.get("channels", [])
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH, timeout=30.0)
     conn.execute("PRAGMA journal_mode=WAL")
@@ -65,13 +78,10 @@ def find_header_and_read(path, sheet_name, keywords):
             return pd.read_excel(path, sheet_name=sheet_name, header=idx), idx
     raise ValueError(f"Could not find header row with keywords {keywords}")
 
-def parse_counter():
-    print("Parsing Counter sales...")
-    folder = os.path.join(SCRIPT_DIR, r"sales_reports\counter")
+def parse_counter(folder, channel_name="Counter"):
+    print(f"Parsing {channel_name} sales...")
     if not os.path.exists(folder):
-        folder = os.path.join(SCRIPT_DIR, r"2026-Jan-Jun\Counter-Jan-Jun-2026")
-    if not os.path.exists(folder):
-        print(f"Counter folder {folder} not found.")
+        print(f"{channel_name} folder {folder} not found.")
         return []
     
     orders = {}
@@ -172,13 +182,10 @@ def parse_counter():
     print(f"Parsed {len(orders)} Counter orders.")
     return list(orders.values())
 
-def parse_zomato():
-    print("Parsing Zomato sales...")
-    folder = os.path.join(SCRIPT_DIR, r"sales_reports\zomato")
+def parse_zomato(folder, channel_name="Zomato"):
+    print(f"Parsing {channel_name} sales...")
     if not os.path.exists(folder):
-        folder = os.path.join(SCRIPT_DIR, r"2026-Jan-Jun\Zomato-Jan-Jun-2026")
-    if not os.path.exists(folder):
-        print(f"Zomato folder {folder} not found.")
+        print(f"{channel_name} folder {folder} not found.")
         return []
     
     orders = {}
@@ -256,13 +263,10 @@ def parse_zomato():
     print(f"Parsed {len(orders)} Zomato orders.")
     return list(orders.values())
 
-def parse_swiggy():
-    print("Parsing Swiggy sales...")
-    folder = os.path.join(SCRIPT_DIR, r"sales_reports\swiggy")
+def parse_swiggy(folder, channel_name="Swiggy"):
+    print(f"Parsing {channel_name} sales...")
     if not os.path.exists(folder):
-        folder = os.path.join(SCRIPT_DIR, r"2026-Jan-Jun\Swiggy")
-    if not os.path.exists(folder):
-        print(f"Swiggy folder {folder} not found.")
+        print(f"{channel_name} folder {folder} not found.")
         return []
     
     orders = {}
@@ -337,19 +341,28 @@ def import_all(progress_callback=None):
     log_progress("Initializing sales database tables...")
     init_db()
     
-    log_progress("Parsing Counter sales reports from Excel files...")
-    counter_orders = parse_counter()
-    log_progress(f"Counter parsing complete: parsed {len(counter_orders)} orders.")
+    all_orders = []
+    stats = {}
     
-    log_progress("Parsing Zomato sales reports from Excel files...")
-    zomato_orders = parse_zomato()
-    log_progress(f"Zomato parsing complete: parsed {len(zomato_orders)} orders.")
+    for ch in channels_config:
+        folder = os.path.join(SCRIPT_DIR, ch.get("import_folder", ""))
+        name = ch["name"]
+        slug = ch["id"]
+        
+        parsed_orders = []
+        if slug == "counter":
+            parsed_orders = parse_counter(folder, name)
+        elif slug == "zomato":
+            parsed_orders = parse_zomato(folder, name)
+        elif slug == "swiggy":
+            parsed_orders = parse_swiggy(folder, name)
+        else:
+            log_progress(f"No specific parser found for channel slug '{slug}'. Skipping.")
+            
+        all_orders.extend(parsed_orders)
+        stats[slug] = len(parsed_orders)
+        log_progress(f"{name} parsing complete: parsed {len(parsed_orders)} orders.")
     
-    log_progress("Parsing Swiggy sales reports from Excel files...")
-    swiggy_orders = parse_swiggy()
-    log_progress(f"Swiggy parsing complete: parsed {len(swiggy_orders)} orders.")
-    
-    all_orders = counter_orders + zomato_orders + swiggy_orders
     log_progress(f"Total parsed orders from all channels: {len(all_orders)}. Starting database import...")
     
     conn = get_db_connection()
@@ -407,13 +420,12 @@ def import_all(progress_callback=None):
     
     log_progress(f"Sales Import Complete: {orders_inserted} orders and {payments_inserted} payment details updated.")
     
-    return {
+    result_stats = {
         "orders_inserted": orders_inserted,
-        "payments_inserted": payments_inserted,
-        "counter_orders": len(counter_orders),
-        "zomato_orders": len(zomato_orders),
-        "swiggy_orders": len(swiggy_orders)
+        "payments_inserted": payments_inserted
     }
+    result_stats.update({f"{k}_orders": v for k, v in stats.items()})
+    return result_stats
 
 if __name__ == "__main__":
     import_all()

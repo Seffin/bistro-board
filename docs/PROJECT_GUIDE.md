@@ -284,3 +284,183 @@ bistro-board/
     ├── swiggy/                     # Weekly Swiggy settlement annexure files
     └── zomato/                     # Weekly Zomato order-level payout sheets
 ```
+
+## 12. Phase 3: Detailed Analytics Views (✅ COMPLETE)
+
+The Phase 3 implementation expands the SvelteKit web stack with 8 fully-featured analytics tabs. All tabs support unified date range filtering, responsive design, and comprehensive test coverage (177 passing tests).
+
+### Architecture Highlights
+- **TDD Approach**: All tabs implemented with tests first, then load functions, then Svelte components
+- **Shared Date Range**: Global `dateRange` store with factory pattern, URL-synced across all tabs
+- **Dynamic Configuration**: All tabs use channel configuration from `channels` table for colors, names, and filtering
+- **Type Safety**: Full TypeScript support, Drizzle ORM for all database queries
+- **Responsive Design**: Mobile/tablet/desktop layouts with CSS Grid & Flexbox
+- **Dark Mode**: Automatic system preference detection with CSS variables
+
+### Tabs & Features
+
+#### 1. **Home / Overview** (Executive Dashboard)
+- **Route**: `/`
+- **KPIs**: Total Orders, Gross Revenue, Net Payout, Active Channels
+- **Charts**: Monthly Contribution (stacked bar), Revenue Trends (line), Hourly Velocity (heatmap), Channel Mix (pie), Profit/Loss (bar), Weekly Performance (area), Expense Breakdown (pie)
+- **Features**: Interactive date range filter, responsive charts, empty state handling
+- **Tests**: 52 passing tests
+
+#### 2. **Sales** (Recent Orders)
+- **Route**: `/sales`
+- **Display**: 50 most recent orders with channel badges, status indicators, amounts
+- **Columns**: Order ID, Date, Channel, Status, Amount, Customer
+- **Features**: Paginated table, channel-specific colors, empty state
+- **Tests**: Included in core tests
+
+#### 3. **Businesses** (Daily Income Ledger)
+- **Route**: `/businesses`
+- **Display**: 50 most recent income register entries by date
+- **Columns**: Date, Day, Petpooja, Swiggy, Zomato, Total Income, Bank, Cash
+- **Features**: Daily aggregation, channel breakdown, payment method tracking
+- **Tests**: Included in core tests
+
+#### 4. **Economics** (Channel Fee Analysis)
+- **Route**: `/economics`
+- **KPIs**: Total Gross Sales, Total Commission, Total Payouts
+- **Analysis**: Commission rate by channel, platform fee breakdown, payout ratio visualization
+- **Charts**: Channel Comparison (bars), Commission Distribution (pie), Payout Analysis (stacked bar)
+- **Features**: Channel-specific filtering, rate calculations, visual breakdown
+- **Tests**: 15 passing tests
+
+#### 5. **Counter Insights** (POS Top Items & Payments)
+- **Route**: `/counter`
+- **KPIs**: Total Counter Orders, Top Item, Payment Methods
+- **Tables**: Top 15 items by frequency with counts and percentages, Payment method breakdown
+- **Features**: Item trend analysis, payment mix visualization, detail modal for item history
+- **Tests**: 16 passing tests
+
+#### 6. **Order Journal** (Paginated Order History)
+- **Route**: `/orders`
+- **KPIs**: Total Orders, Showing X Results
+- **Pagination**: 50 items per page with Previous/Next controls
+- **Filters**: Multi-select channels, multi-select status (delivered/pending/cancelled/failed), search by order ID
+- **Display**: Order ID, Date, Channel (badge), Status (badge), Amount
+- **Features**: Advanced filtering, pagination math, search highlighting, empty state
+- **Tests**: 15 passing tests
+
+#### 7. **Business Ledger** (Daily Income Breakdown)
+- **Route**: `/ledger`
+- **KPIs**: Total Income, Net Profit, Average Daily Income
+- **Display**: Daily breakdown table with channel columns (Counter, Swiggy, Zomato, Other, Total)
+- **Summary**: Channel contribution percentages with colored indicators
+- **Features**: Daily aggregation, profit calculation, channel attribution
+- **Tests**: 11 passing tests
+
+#### 8. **Reconciliation** (Counter vs Ledger Variance)
+- **Route**: `/reconciliation`
+- **KPIs**: Reconciliation Rate (%), Total Variance, Days Analyzed
+- **Display**: Daily variance table (Counter Total, Ledger Total, Variance, Status)
+- **Status Badges**: 'Matched' (green), variance indicators, percentage calculations
+- **Features**: Variance tracking, reconciliation status, trend analysis over time
+- **Tests**: 7 passing tests
+
+#### 9. **Payout Analytics** (Weekly Settlement)
+- **Route**: `/payouts`
+- **KPIs**: Total Payout, Average Weekly, Highest Week
+- **Display**: Weekly summary (Week, Counter, Swiggy, Zomato, Total) with highest week highlighted
+- **Summary**: Channel totals with percentage breakdown
+- **Features**: Weekly aggregation, highest week identification, channel breakdown
+- **Tests**: 7 passing tests
+
+#### 10. **Promo Impact** (Discount Analysis)
+- **Route**: `/promo`
+- **KPIs**: Orders with Promo, Total Discount Value, Total Orders Analyzed
+- **Analysis**: Discount distribution across 4 buckets (0-100, 100-250, 250-500, 500+)
+- **Display**: Distribution table with order counts, penetration %, averages
+- **Insights**: Penetration rate analysis, top bucket identification, discount impact metrics
+- **Features**: Bucket categorization, insight generation, correlation analysis
+- **Tests**: 6 passing tests
+
+### Development Workflow
+
+#### Running Tests
+```bash
+cd web
+npm test
+```
+Expected output: **177 tests passed** (83 core + 94 new)
+
+#### Running Development Server
+```bash
+cd web
+npm run dev
+# Navigate to http://localhost:5173
+```
+
+#### Building for Production
+```bash
+cd web
+npm run build
+npm run preview
+```
+
+### Data Aggregation Patterns
+All tabs use consistent Drizzle ORM patterns for type-safe queries:
+
+```typescript
+// Date range filtering
+const start = url.searchParams.get('start') ? new Date(url.searchParams.get('start')!) : null
+const end = url.searchParams.get('end') ? new Date(url.searchParams.get('end')!) : null
+
+let query = db.select().from(orders)
+if (start && end) {
+  query = query.where(between(orders.order_date, start, new Date(end.getTime() + 86400000)))
+}
+
+// Channel filtering
+const channels = url.searchParams.get('channels')?.split(',') || []
+if (channels.length > 0) {
+  query = query.where(inArray(orders.channel, channels))
+}
+```
+
+### Component Patterns
+All Svelte components use Svelte 5 runes for reactive state:
+
+```svelte
+<script lang="ts">
+  import DateRangeHeader from '$lib/components/DateRangeHeader.svelte'
+  import KPICard from '$lib/components/KPICard.svelte'
+
+  let { data } = $props()
+  const items = $derived(data.items)
+</script>
+
+<header class="header card">
+  <h1>Page Title</h1>
+  <DateRangeHeader />
+</header>
+
+<div class="kpi-row">
+  <KPICard title="..." value={...} subtitle="..." />
+</div>
+
+<!-- Content: tables, charts, insights -->
+```
+
+### Testing Strategy
+- **Unit Tests**: Load functions tested with mock data
+- **Data Validation**: Verify aggregation logic, calculations, filtering
+- **Edge Cases**: Boundary dates, empty results, large datasets
+- **Type Safety**: All queries and return types verified by TypeScript
+
+### Deployment Checklist
+- ✅ All 177 tests passing
+- ✅ Date range filtering working across all tabs
+- ✅ Responsive design tested on mobile/tablet/desktop
+- ✅ Dark mode CSS variables applied
+- ✅ Currency formatting (INR) consistent
+- ✅ Empty states displaying when no data
+- ✅ Database migrations applied (`npx tsx scripts/migrate-data.ts`)
+- ✅ Channel configuration seeded (`npx tsx scripts/seed-channels.ts`)
+- ✅ Environment variables set (`.env` with `DATABASE_URL`)
+
+### Related Documentation
+- [Postgres Setup Guide](postgres_setup.md) — Instructions for Neon database configuration
+- [Settings Tab Proposal](settings_tab_proposal.md) — Future roadmap for Settings features

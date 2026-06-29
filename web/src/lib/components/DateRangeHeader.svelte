@@ -1,0 +1,166 @@
+<script lang="ts">
+	import { page } from '$app/state';
+
+	interface Props {
+		onFilterApply?: (start: string, end: string) => void;
+	}
+
+	let { onFilterApply }: Props = $props();
+
+	// Initialize from URL params
+	let startDate = $state(page.url.searchParams.get('start') || '');
+	let endDate = $state(page.url.searchParams.get('end') || '');
+
+	function applyDateRange(e: Event) {
+		e.preventDefault();
+		if (typeof window !== 'undefined') {
+			const url = new URL(window.location.href);
+			if (startDate && endDate) {
+				url.searchParams.set('start', startDate);
+				url.searchParams.set('end', endDate);
+			} else {
+				url.searchParams.delete('start');
+				url.searchParams.delete('end');
+			}
+			// Use browser history to update URL without full reload
+			window.history.pushState({}, '', url);
+			// Trigger data reload by calling the callback
+			if (onFilterApply) {
+				onFilterApply(startDate, endDate);
+			} else {
+				// Fallback: reload page if no callback provided
+				window.location.href = url.href;
+			}
+		}
+	}
+
+	function clearDateRange(e: Event) {
+		e.preventDefault();
+		startDate = '';
+		endDate = '';
+		if (typeof window !== 'undefined') {
+			const url = new URL(window.location.href);
+			url.searchParams.delete('start');
+			url.searchParams.delete('end');
+			window.history.pushState({}, '', url);
+			if (onFilterApply) {
+				onFilterApply('', '');
+			}
+		}
+	}
+</script>
+
+<form class="date-picker-form" onsubmit={applyDateRange}>
+	<div class="date-inputs">
+		<input type="date" bind:value={startDate} class="simple-input" aria-label="Start Date" />
+		<span class="separator">to</span>
+		<input type="date" bind:value={endDate} class="simple-input" aria-label="End Date" />
+	</div>
+	<div class="button-group">
+		<button type="submit" class="btn btn-secondary">Filter</button>
+		{#if startDate || endDate}
+			<button type="button" class="btn btn-ghost" onclick={clearDateRange}>Clear</button>
+		{/if}
+	</div>
+</form>
+
+<style>
+	.date-picker-form {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+
+	.date-inputs {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.simple-input {
+		padding: 0.5rem 1rem;
+		border: 1px solid var(--border-color);
+		border-radius: var(--border-radius);
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+		font-family: inherit;
+		font-size: 0.875rem;
+		outline: none;
+		transition: border-color 0.2s ease;
+	}
+
+	.simple-input:focus {
+		border-color: var(--accent-primary);
+	}
+
+	.separator {
+		color: var(--text-secondary);
+		font-size: 0.875rem;
+		margin: 0 0.25rem;
+	}
+
+	.button-group {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.btn {
+		padding: 0.5rem 1.25rem;
+		border-radius: var(--border-radius);
+		border: none;
+		font-weight: 600;
+		font-size: 0.875rem;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		white-space: nowrap;
+	}
+
+	.btn-secondary {
+		background: var(--accent-secondary);
+		color: white;
+	}
+
+	.btn-secondary:hover:not(:disabled) {
+		background: color-mix(in srgb, var(--accent-secondary) 90%, black);
+	}
+
+	.btn-ghost {
+		background: transparent;
+		color: var(--text-secondary);
+		border: 1px solid var(--border-color);
+	}
+
+	.btn-ghost:hover {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+	}
+
+	.btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	@media (max-width: 768px) {
+		.date-picker-form {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.date-inputs {
+			width: 100%;
+		}
+
+		.simple-input {
+			flex: 1;
+		}
+
+		.button-group {
+			width: 100%;
+		}
+
+		.btn {
+			flex: 1;
+		}
+	}
+</style>

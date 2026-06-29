@@ -13,6 +13,12 @@ export const channels = pgTable('channels', {
 	updated_at: timestamp('updated_at').defaultNow().notNull()
 });
 
+export const app_settings = pgTable('app_settings', {
+	key: text('key').primaryKey(),
+	value: text('value').notNull(),
+	updated_at: timestamp('updated_at').defaultNow().notNull()
+});
+
 // --- Data Tables ---
 
 export const orders = pgTable('orders', {

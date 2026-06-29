@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import DateRangeHeader from '$lib/components/DateRangeHeader.svelte';
 	let { data } = $props();
 	const ledger = $derived(data.ledger);
 
@@ -21,8 +22,11 @@
 
 <div class="page-container">
 	<div class="header">
-		<h1>Business Ledger</h1>
-		<p>Daily breakdown of income across channels and bank accounts.</p>
+		<div>
+			<h1>Business Ledger</h1>
+			<p>Daily breakdown of income across channels and bank accounts.</p>
+		</div>
+		<DateRangeHeader />
 	</div>
 
 	<div class="card table-container">
@@ -64,6 +68,14 @@
 		display: flex;
 		flex-direction: column;
 		gap: 2rem;
+	}
+
+	.header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 2rem;
+		flex-wrap: wrap;
 	}
 
 	.header h1 {
