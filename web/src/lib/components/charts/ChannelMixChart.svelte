@@ -66,8 +66,22 @@
 							value: {
 								fontSize: '16px',
 								color: themeState.current === 'dark' ? '#f8fafc' : '#0f172a',
-								formatter: (_val: number, opts: any) => {
-									const idx = opts?.seriesIndex ?? 0;
+								formatter: (val: number, opts: any) => {
+									let idx = opts?.seriesIndex;
+									if (idx === undefined || idx === null) {
+										// Find closest matching percentage in case of float precision issues
+										let closestIdx = 0;
+										let minDiff = Infinity;
+										for (let i = 0; i < normalizedSeries.length; i++) {
+											const diff = Math.abs(normalizedSeries[i] - Number(val));
+											if (diff < minDiff) {
+												minDiff = diff;
+												closestIdx = i;
+											}
+										}
+										idx = closestIdx;
+									}
+									if (idx === -1 || idx === undefined || idx === null) idx = 0;
 									return `₹${aggregatedSeries[idx] ?? 0} L`;
 								}
 							},
