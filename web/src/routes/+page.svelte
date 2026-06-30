@@ -30,12 +30,6 @@
 	let syncLogs = $state<string[]>([]);
 	let showLogs = $state(false);
 
-	function handleDateFilterApply(start: string, end: string) {
-		if (typeof window !== 'undefined') {
-			setTimeout(() => window.location.reload(), 100);
-		}
-	}
-
 	async function startSync() {
 		if (isSyncing) return;
 		isSyncing = true;
@@ -99,7 +93,7 @@
 		</div>
 		<div class="actions-area">
 			<!-- Date Range Picker -->
-			<DateRangeHeader onFilterApply={handleDateFilterApply} />
+			<DateRangeHeader />
 
 			<!-- Sync Button -->
 			<button class="btn btn-primary" onclick={startSync} disabled={isSyncing}>

@@ -3,13 +3,9 @@ export function getDefaultDateRange(): { start: string; end: string } {
 		return { start: '2026-06-01', end: '2026-06-30' };
 	}
 
-	const end = new Date();
-	const start = new Date();
-	start.setDate(end.getDate() - 30);
-
 	return {
-		start: start.toISOString().split('T')[0],
-		end: end.toISOString().split('T')[0]
+		start: '2026-01-01',
+		end: '2026-06-30'
 	};
 }
 

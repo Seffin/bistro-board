@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { getDefaultDateRange } from '$lib/utils/date-filter';
 	import ChannelFilter from './ChannelFilter.svelte';
 
@@ -26,13 +27,10 @@
 				url.searchParams.delete('end');
 			}
 			// Use browser history to update URL without full reload
-			window.history.pushState({}, '', url);
+			goto(url.toString(), { keepFocus: true, noScroll: true });
 			// Trigger data reload by calling the callback
 			if (onFilterApply) {
 				onFilterApply(startDate, endDate);
-			} else {
-				// Fallback: reload page if no callback provided
-				window.location.href = url.href;
 			}
 		}
 	}
@@ -45,7 +43,7 @@
 			const url = new URL(window.location.href);
 			url.searchParams.delete('start');
 			url.searchParams.delete('end');
-			window.history.pushState({}, '', url);
+			goto(url.toString(), { keepFocus: true, noScroll: true });
 			if (onFilterApply) {
 				onFilterApply('', '');
 			}
