@@ -14,4 +14,3 @@ web/env
 *.db-shm
 *.db-wal
 settings.json
-philos_sales.db
