@@ -4,8 +4,7 @@
 	import { page } from '$app/state';
 	import { getCommonChartOptions } from '$lib/utils/chart-helpers';
 	import { themeState } from '$lib/stores/theme.svelte';
-	import ApexCharts from 'apexcharts';
-	import { onMount } from 'svelte';
+	import type ApexCharts from 'apexcharts';
 	import type { ApexOptions } from 'apexcharts';
 
 	let { data } = $props();
@@ -46,10 +45,12 @@
 	$effect(() => {
 		if (!trendChartContainer || ledger.daily_breakdown.length === 0) return;
 
-		// Reverse to show chronological order
-		const chartData = [...ledger.daily_breakdown].reverse();
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			// Reverse to show chronological order
+			const chartData = [...ledger.daily_breakdown].reverse();
 
-		const base = getCommonChartOptions(themeState.current);
+			const base = getCommonChartOptions(themeState.current);
 		const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
 		
 		const options: ApexOptions = {
@@ -81,24 +82,27 @@
 			dataLabels: { enabled: false }
 		};
 
-		if (!trendChart) {
-			trendChart = new ApexCharts(trendChartContainer, options);
-			trendChart.render();
-		} else {
-			trendChart.updateOptions(options);
-		}
+			if (!trendChart) {
+				trendChart = new ApexCharts(trendChartContainer, options);
+				trendChart.render();
+			} else {
+				trendChart.updateOptions(options);
+			}
+		});
 	});
 
 	// Channel mix pie chart
 	$effect(() => {
 		if (!mixChartContainer || ledger.daily_breakdown.length === 0) return;
 
-		const totalCounter = ledger.daily_breakdown.reduce((sum, d) => sum + d.counter, 0);
-		const totalSwiggy = ledger.daily_breakdown.reduce((sum, d) => sum + d.swiggy, 0);
-		const totalZomato = ledger.daily_breakdown.reduce((sum, d) => sum + d.zomato, 0);
-		const totalOther = ledger.daily_breakdown.reduce((sum, d) => sum + d.other, 0);
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			const totalCounter = ledger.daily_breakdown.reduce((sum, d) => sum + d.counter, 0);
+			const totalSwiggy = ledger.daily_breakdown.reduce((sum, d) => sum + d.swiggy, 0);
+			const totalZomato = ledger.daily_breakdown.reduce((sum, d) => sum + d.zomato, 0);
+			const totalOther = ledger.daily_breakdown.reduce((sum, d) => sum + d.other, 0);
 
-		const base = getCommonChartOptions(themeState.current);
+			const base = getCommonChartOptions(themeState.current);
 		const options: ApexOptions = {
 			...base,
 			chart: { ...base.chart, type: 'donut', height: 300 },
@@ -121,12 +125,13 @@
 			}
 		};
 
-		if (!mixChart) {
-			mixChart = new ApexCharts(mixChartContainer, options);
-			mixChart.render();
-		} else {
-			mixChart.updateOptions(options);
-		}
+			if (!mixChart) {
+				mixChart = new ApexCharts(mixChartContainer, options);
+				mixChart.render();
+			} else {
+				mixChart.updateOptions(options);
+			}
+		});
 	});
 </script>
 

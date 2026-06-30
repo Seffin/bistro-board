@@ -3,8 +3,7 @@
 	import KPICard from '$lib/components/KPICard.svelte';
 	import { getCommonChartOptions } from '$lib/utils/chart-helpers';
 	import { themeState } from '$lib/stores/theme.svelte';
-	import ApexCharts from 'apexcharts';
-	import { onMount } from 'svelte';
+	import type ApexCharts from 'apexcharts';
 	import type { ApexOptions } from 'apexcharts';
 
 	let { data } = $props();
@@ -36,7 +35,9 @@
 	$effect(() => {
 		if (!distributionChartContainer || promo.discount_buckets.length === 0) return;
 
-		const base = getCommonChartOptions(themeState.current);
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			const base = getCommonChartOptions(themeState.current);
 		const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
 		
 		const options: ApexOptions = {
@@ -67,19 +68,22 @@
 			legend: { show: false }
 		};
 
-		if (!distributionChart) {
-			distributionChart = new ApexCharts(distributionChartContainer, options);
-			distributionChart.render();
-		} else {
-			distributionChart.updateOptions(options);
-		}
+			if (!distributionChart) {
+				distributionChart = new ApexCharts(distributionChartContainer, options);
+				distributionChart.render();
+			} else {
+				distributionChart.updateOptions(options);
+			}
+		});
 	});
 
 	// Channel Promo Penetration Donut Chart
 	$effect(() => {
 		if (!penetrationChartContainer || promo.channel_breakdown.length === 0) return;
 
-		const base = getCommonChartOptions(themeState.current);
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			const base = getCommonChartOptions(themeState.current);
 		
 		const options: ApexOptions = {
 			...base,
@@ -103,12 +107,13 @@
 			}
 		};
 
-		if (!penetrationChart) {
-			penetrationChart = new ApexCharts(penetrationChartContainer, options);
-			penetrationChart.render();
-		} else {
-			penetrationChart.updateOptions(options);
-		}
+			if (!penetrationChart) {
+				penetrationChart = new ApexCharts(penetrationChartContainer, options);
+				penetrationChart.render();
+			} else {
+				penetrationChart.updateOptions(options);
+			}
+		});
 	});
 </script>
 

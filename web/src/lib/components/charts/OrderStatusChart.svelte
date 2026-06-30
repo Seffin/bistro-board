@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getCommonChartOptions } from '$lib/utils/chart-helpers';
-	import ApexCharts from 'apexcharts';
+	import type ApexCharts from 'apexcharts';
 	import { themeState } from '$lib/stores/theme.svelte';
 	import { onMount } from 'svelte';
 
@@ -24,7 +24,9 @@
 	$effect(() => {
 		if (!chartNode || !hasData) return;
 
-		const baseOptions = getCommonChartOptions(themeState.current);
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			const baseOptions = getCommonChartOptions(themeState.current);
 		const options = {
 			...baseOptions,
 			chart: {
@@ -84,12 +86,13 @@
 			}
 		};
 
-		if (!chart) {
-			chart = new ApexCharts(chartNode, options);
-			chart.render();
-		} else {
-			chart.updateOptions(options);
-		}
+			if (!chart) {
+				chart = new ApexCharts(chartNode, options);
+				chart.render();
+			} else {
+				chart.updateOptions(options);
+			}
+		});
 	});
 </script>
 

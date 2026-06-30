@@ -3,8 +3,7 @@
 	import KPICard from '$lib/components/KPICard.svelte';
 	import { getCommonChartOptions } from '$lib/utils/chart-helpers';
 	import { themeState } from '$lib/stores/theme.svelte';
-	import ApexCharts from 'apexcharts';
-	import { onMount } from 'svelte';
+	import type ApexCharts from 'apexcharts';
 	import type { ApexOptions } from 'apexcharts';
 
 	let { data } = $props();
@@ -49,10 +48,12 @@
 	$effect(() => {
 		if (!trendChartContainer || payouts.weekly_payouts.length === 0) return;
 
-		// Reverse to show chronological order
-		const chartData = [...payouts.weekly_payouts].reverse();
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			// Reverse to show chronological order
+			const chartData = [...payouts.weekly_payouts].reverse();
 
-		const base = getCommonChartOptions(themeState.current);
+			const base = getCommonChartOptions(themeState.current);
 		const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
 		
 		const options: ApexOptions = {
@@ -82,24 +83,27 @@
 			dataLabels: { enabled: false }
 		};
 
-		if (!trendChart) {
-			trendChart = new ApexCharts(trendChartContainer, options);
-			trendChart.render();
-		} else {
-			trendChart.updateOptions(options);
-		}
+			if (!trendChart) {
+				trendChart = new ApexCharts(trendChartContainer, options);
+				trendChart.render();
+			} else {
+				trendChart.updateOptions(options);
+			}
+		});
 	});
 
 	// Channel split donut chart
 	$effect(() => {
 		if (!splitChartContainer || payouts.weekly_payouts.length === 0) return;
 
-		const totalCounter = payouts.weekly_payouts.reduce((sum, p) => sum + p.counter, 0);
-		const totalSwiggy = payouts.weekly_payouts.reduce((sum, p) => sum + p.swiggy, 0);
-		const totalZomato = payouts.weekly_payouts.reduce((sum, p) => sum + p.zomato, 0);
-		const totalOther = payouts.weekly_payouts.reduce((sum, p) => sum + p.other, 0);
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			const totalCounter = payouts.weekly_payouts.reduce((sum, p) => sum + p.counter, 0);
+			const totalSwiggy = payouts.weekly_payouts.reduce((sum, p) => sum + p.swiggy, 0);
+			const totalZomato = payouts.weekly_payouts.reduce((sum, p) => sum + p.zomato, 0);
+			const totalOther = payouts.weekly_payouts.reduce((sum, p) => sum + p.other, 0);
 
-		const base = getCommonChartOptions(themeState.current);
+			const base = getCommonChartOptions(themeState.current);
 		const options: ApexOptions = {
 			...base,
 			chart: { ...base.chart, type: 'donut', height: 350 },
@@ -122,12 +126,13 @@
 			}
 		};
 
-		if (!splitChart) {
-			splitChart = new ApexCharts(splitChartContainer, options);
-			splitChart.render();
-		} else {
-			splitChart.updateOptions(options);
-		}
+			if (!splitChart) {
+				splitChart = new ApexCharts(splitChartContainer, options);
+				splitChart.render();
+			} else {
+				splitChart.updateOptions(options);
+			}
+		});
 	});
 </script>
 

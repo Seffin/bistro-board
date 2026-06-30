@@ -4,8 +4,7 @@
 	import KPICard from '$lib/components/KPICard.svelte';
 	import { formatCurrency, getCommonChartOptions } from '$lib/utils/chart-helpers';
 	import { themeState } from '$lib/stores/theme.svelte';
-	import ApexCharts from 'apexcharts';
-	import { onMount } from 'svelte';
+	import type ApexCharts from 'apexcharts';
 	import type { ApexOptions } from 'apexcharts';
 
 	let { data } = $props();
@@ -44,7 +43,9 @@
 	$effect(() => {
 		if (!commissionChartContainer || economics.channels.length === 0) return;
 
-		const base = getCommonChartOptions(themeState.current);
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			const base = getCommonChartOptions(themeState.current);
 		const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
 		const options: ApexOptions = {
 			...base,
@@ -76,18 +77,21 @@
 			}
 		};
 
-		if (!commissionChart) {
-			commissionChart = new ApexCharts(commissionChartContainer, options);
-			commissionChart.render();
-		} else {
-			commissionChart.updateOptions(options);
-		}
+			if (!commissionChart) {
+				commissionChart = new ApexCharts(commissionChartContainer, options);
+				commissionChart.render();
+			} else {
+				commissionChart.updateOptions(options);
+			}
+		});
 	});
 
 	$effect(() => {
 		if (!payoutRatioChartContainer || economics.channels.length === 0) return;
 
-		const base = getCommonChartOptions(themeState.current);
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			const base = getCommonChartOptions(themeState.current);
 		const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
 		const options: ApexOptions = {
 			...base,
@@ -119,18 +123,21 @@
 			}
 		};
 
-		if (!payoutRatioChart) {
-			payoutRatioChart = new ApexCharts(payoutRatioChartContainer, options);
-			payoutRatioChart.render();
-		} else {
-			payoutRatioChart.updateOptions(options);
-		}
+			if (!payoutRatioChart) {
+				payoutRatioChart = new ApexCharts(payoutRatioChartContainer, options);
+				payoutRatioChart.render();
+			} else {
+				payoutRatioChart.updateOptions(options);
+			}
+		});
 	});
 
 	$effect(() => {
 		if (!leakageChartContainer || economics.channels.length === 0) return;
 
-		const base = getCommonChartOptions(themeState.current);
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			const base = getCommonChartOptions(themeState.current);
 		const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
 
 		// Stacked bar: Commission + Other Charges
@@ -168,19 +175,22 @@
 			dataLabels: { enabled: false }
 		};
 
-		if (!leakageChart) {
-			leakageChart = new ApexCharts(leakageChartContainer, options);
-			leakageChart.render();
-		} else {
-			leakageChart.updateOptions(options);
-		}
+			if (!leakageChart) {
+				leakageChart = new ApexCharts(leakageChartContainer, options);
+				leakageChart.render();
+			} else {
+				leakageChart.updateOptions(options);
+			}
+		});
 	});
 
 	// Monthly trend chart
 	$effect(() => {
 		if (!trendChartContainer || economics.monthly_trends.length === 0) return;
 
-		const base = getCommonChartOptions(themeState.current);
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			const base = getCommonChartOptions(themeState.current);
 		const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
 		const options: ApexOptions = {
 			...base,
@@ -212,12 +222,13 @@
 			dataLabels: { enabled: false }
 		};
 
-		if (!trendChart) {
-			trendChart = new ApexCharts(trendChartContainer, options);
-			trendChart.render();
-		} else {
-			trendChart.updateOptions(options);
-		}
+			if (!trendChart) {
+				trendChart = new ApexCharts(trendChartContainer, options);
+				trendChart.render();
+			} else {
+				trendChart.updateOptions(options);
+			}
+		});
 	});
 </script>
 

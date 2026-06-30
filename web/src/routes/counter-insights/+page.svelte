@@ -4,8 +4,7 @@
 	import KPICard from '$lib/components/KPICard.svelte';
 	import { formatCurrency, getCommonChartOptions } from '$lib/utils/chart-helpers';
 	import { themeState } from '$lib/stores/theme.svelte';
-	import ApexCharts from 'apexcharts';
-	import { onMount } from 'svelte';
+	import type ApexCharts from 'apexcharts';
 	import type { ApexOptions } from 'apexcharts';
 
 	let { data } = $props();
@@ -32,7 +31,9 @@
 	$effect(() => {
 		if (!topItemsChartContainer || insights.top_items.length === 0) return;
 
-		const base = getCommonChartOptions(themeState.current);
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			const base = getCommonChartOptions(themeState.current);
 		const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
 		const options: ApexOptions = {
 			...base,
@@ -61,19 +62,22 @@
 			}
 		};
 
-		if (!topItemsChart) {
-			topItemsChart = new ApexCharts(topItemsChartContainer, options);
-			topItemsChart.render();
-		} else {
-			topItemsChart.updateOptions(options);
-		}
+			if (!topItemsChart) {
+				topItemsChart = new ApexCharts(topItemsChartContainer, options);
+				topItemsChart.render();
+			} else {
+				topItemsChart.updateOptions(options);
+			}
+		});
 	});
 
 	// Payment mix donut
 	$effect(() => {
 		if (!paymentMixChartContainer || insights.payment_mix.length === 0) return;
 
-		const base = getCommonChartOptions(themeState.current);
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			const base = getCommonChartOptions(themeState.current);
 		const options: ApexOptions = {
 			...base,
 			chart: { ...base.chart, type: 'donut', height: 350 },
@@ -100,19 +104,22 @@
 			}
 		};
 
-		if (!paymentMixChart) {
-			paymentMixChart = new ApexCharts(paymentMixChartContainer, options);
-			paymentMixChart.render();
-		} else {
-			paymentMixChart.updateOptions(options);
-		}
+			if (!paymentMixChart) {
+				paymentMixChart = new ApexCharts(paymentMixChartContainer, options);
+				paymentMixChart.render();
+			} else {
+				paymentMixChart.updateOptions(options);
+			}
+		});
 	});
 
 	// Daily trend line chart
 	$effect(() => {
 		if (!dailyTrendChartContainer || insights.daily_trends.length === 0) return;
 
-		const base = getCommonChartOptions(themeState.current);
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			const base = getCommonChartOptions(themeState.current);
 		const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
 		const options: ApexOptions = {
 			...base,
@@ -157,12 +164,13 @@
 			dataLabels: { enabled: false }
 		};
 
-		if (!dailyTrendChart) {
-			dailyTrendChart = new ApexCharts(dailyTrendChartContainer, options);
-			dailyTrendChart.render();
-		} else {
-			dailyTrendChart.updateOptions(options);
-		}
+			if (!dailyTrendChart) {
+				dailyTrendChart = new ApexCharts(dailyTrendChartContainer, options);
+				dailyTrendChart.render();
+			} else {
+				dailyTrendChart.updateOptions(options);
+			}
+		});
 	});
 
 	function selectItem(item: (typeof insights.top_items)[0]) {

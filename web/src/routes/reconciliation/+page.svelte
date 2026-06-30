@@ -4,8 +4,7 @@
 	import { page } from '$app/state';
 	import { getCommonChartOptions } from '$lib/utils/chart-helpers';
 	import { themeState } from '$lib/stores/theme.svelte';
-	import ApexCharts from 'apexcharts';
-	import { onMount } from 'svelte';
+	import type ApexCharts from 'apexcharts';
 	import type { ApexOptions } from 'apexcharts';
 
 	let { data } = $props();
@@ -48,10 +47,13 @@
 	$effect(() => {
 		if (!varianceChartContainer || reconciliation.daily_data.length === 0) return;
 
-		// Reverse to show chronological order
-		const chartData = [...reconciliation.daily_data].reverse();
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			
+			// Reverse to show chronological order
+			const chartData = [...reconciliation.daily_data].reverse();
 
-		const base = getCommonChartOptions(themeState.current);
+			const base = getCommonChartOptions(themeState.current);
 		const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
 		
 		const options: ApexOptions = {
@@ -88,12 +90,13 @@
 			dataLabels: { enabled: false }
 		};
 
-		if (!varianceChart) {
-			varianceChart = new ApexCharts(varianceChartContainer, options);
-			varianceChart.render();
-		} else {
-			varianceChart.updateOptions(options);
-		}
+			if (!varianceChart) {
+				varianceChart = new ApexCharts(varianceChartContainer, options);
+				varianceChart.render();
+			} else {
+				varianceChart.updateOptions(options);
+			}
+		});
 	});
 </script>
 
