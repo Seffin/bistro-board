@@ -26,12 +26,12 @@ export const load = async ({ url }: { url: URL }) => {
 	}
 
 	// Fetch the 50 most recent orders for the UI
-	let query = db.select().from(orders).$dynamic();
-	if (conditions.length > 0) {
-		query = query.where(and(...conditions));
-	}
-	
-	const recentOrders = await query.orderBy(desc(orders.order_date)).limit(50);
+	const recentOrders = await db
+		.select()
+		.from(orders)
+		.where(conditions.length > 0 ? and(...conditions) : undefined)
+		.orderBy(desc(orders.order_date))
+		.limit(50);
 
 	return {
 		orders: recentOrders,

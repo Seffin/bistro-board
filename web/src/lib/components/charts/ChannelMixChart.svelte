@@ -17,6 +17,11 @@
 	const labels = $derived(series.map(s => s.name));
 	const colors = $derived(series.map(s => s.color));
 
+	// Check if we have valid data for the radial bar
+	const hasValidData = $derived(
+		aggregatedSeries.length > 0 && aggregatedSeries.some(v => v > 0)
+	);
+
 	let chartNode: HTMLElement;
 	let chart: ApexCharts;
 
@@ -27,8 +32,12 @@
 	});
 
 	$effect(() => {
-		if (!chartNode || aggregatedSeries.length === 0) return;
-		
+		if (!chartNode || !hasValidData) return;
+
+		// For radialBar, normalize values to percentages (0-100 scale)
+		const maxVal = Math.max(...aggregatedSeries, 1);
+		const normalizedSeries = aggregatedSeries.map(v => Number(((v / maxVal) * 100).toFixed(1)));
+
 		const baseOptions = getCommonChartOptions(themeState.current);
 		const options = {
 			...baseOptions,
@@ -37,7 +46,7 @@
 				type: 'radialBar',
 				height: 320
 			},
-			series: aggregatedSeries,
+			series: normalizedSeries,
 			labels,
 			colors,
 			plotOptions: {
@@ -54,7 +63,10 @@
 						value: {
 							fontSize: '16px',
 							color: themeState.current === 'dark' ? '#f8fafc' : '#0f172a',
-							formatter: (val: number) => `₹${val} L`
+							formatter: (_val: number, opts: any) => {
+								const idx = opts?.seriesIndex ?? 0;
+								return `₹${aggregatedSeries[idx] ?? 0} L`;
+							}
 						},
 						total: {
 							show: true,
@@ -85,7 +97,13 @@
 		<h2>Channel Mix</h2>
 		<p class="subtitle">Aggregate contribution across selected time window</p>
 	</div>
-	<div bind:this={chartNode}></div>
+	{#if hasValidData}
+		<div bind:this={chartNode}></div>
+	{:else}
+		<div class="empty-chart">
+			<p>No channel mix data available for the selected filters.</p>
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -108,5 +126,14 @@
 		color: var(--text-secondary);
 		font-size: 0.875rem;
 		margin-bottom: 1rem;
+	}
+
+	.empty-chart {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 200px;
+		color: var(--text-secondary);
+		font-size: 0.875rem;
 	}
 </style>

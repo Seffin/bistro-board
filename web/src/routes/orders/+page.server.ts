@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import { orders } from '$lib/server/db/schema';
-import { and, between, ilike, or, desc } from 'drizzle-orm';
+import { and, between, ilike, or, desc, count } from 'drizzle-orm';
 import { error } from '@sveltejs/kit';
 import logger from '$lib/server/logger';
 import { parseDateRange } from '$lib/utils/date-filter';
@@ -61,31 +61,26 @@ export const load = async ({ url }: { url: URL }): Promise<{ data: OrdersData }>
 			);
 		}
 
-		// Get total count
-		let countQuery = db.select().from(orders);
-		if (filterConditions.length > 0) {
-			countQuery = countQuery.where(and(...filterConditions));
-		}
+		// Build where clause once for reuse
+		const whereClause = filterConditions.length > 0 ? and(...filterConditions) : undefined;
 
-		const allFilteredOrders = await countQuery;
-		const totalOrders = allFilteredOrders.length;
+		// Get total count using SQL count aggregate (efficient — no fetching all rows)
+		const countResult = await (whereClause
+			? db.select({ total: count() }).from(orders).where(whereClause)
+			: db.select({ total: count() }).from(orders));
+
+		const totalOrders = countResult[0]?.total ?? 0;
 		const totalPages = Math.ceil(totalOrders / pageSize);
 
-		// Get paginated results
-		let query = db
+		const queryResults = await db
 			.select()
 			.from(orders)
+			.where(whereClause)
 			.orderBy(desc(orders.order_date))
 			.limit(pageSize)
 			.offset((page - 1) * pageSize);
 
-		if (filterConditions.length > 0) {
-			query = query.where(and(...filterConditions));
-		}
-
-		const queryResults = await query;
-
-		const ordersList: OrderRecord[] = queryResults.map((o) => ({
+		const ordersList: OrderRecord[] = queryResults.map((o: any) => ({
 			order_id: o.order_id,
 			order_date: new Date(o.order_date),
 			channel: o.channel || 'unknown',

@@ -1,7 +1,7 @@
 import { db } from '$lib/server/db';
 import { orders } from '$lib/server/db/schema';
 import { getAllChannels } from '$lib/server/config';
-import { between } from 'drizzle-orm';
+import { between, and, ilike } from 'drizzle-orm';
 import { parseDateRange } from '$lib/utils/date-filter';
 
 export interface ChannelEconomics {
@@ -17,8 +17,17 @@ export interface ChannelEconomics {
 	leakage_rate: number;
 }
 
+export interface MonthlyEconomics {
+	month: string;
+	commission: number;
+	other_charges: number;
+	net_payout: number;
+	gross: number;
+}
+
 export interface EconomicsData {
 	channels: ChannelEconomics[];
+	monthly_trends: MonthlyEconomics[];
 	date_range: {
 		start: string;
 		end: string;
@@ -35,6 +44,7 @@ export interface EconomicsData {
 
 export const load = async ({ url }: { url: URL }): Promise<{ economics: EconomicsData }> => {
 	const { start, end } = parseDateRange(url);
+	const selectedChannel = url.searchParams.get('channel');
 
 	// Fetch all active channels
 	const activeChannels = await getAllChannels();
@@ -42,16 +52,26 @@ export const load = async ({ url }: { url: URL }): Promise<{ economics: Economic
 	// Create a map of channel ID to channel info
 	const channelMap = new Map(activeChannels.map((c) => [c.name.toLowerCase(), c]));
 
-	// Fetch orders with optional date filtering
-	const allOrders =
-		start && end
-			? await db
-					.select()
-					.from(orders)
-					.where(
-						between(orders.order_date, new Date(`${start}T00:00:00Z`), new Date(`${end}T23:59:59Z`))
-					)
-			: await db.select().from(orders);
+	// Build conditions
+	const conditions = [];
+	if (start && end) {
+		conditions.push(
+			between(orders.order_date, new Date(`${start}T00:00:00Z`), new Date(`${end}T23:59:59Z`))
+		);
+	}
+
+	// Filter by specific channel if selected
+	if (selectedChannel && selectedChannel !== 'all') {
+		const channel = activeChannels.find((c) => c.id === selectedChannel);
+		if (channel) {
+			conditions.push(ilike(orders.channel, channel.name));
+		}
+	}
+
+	const allOrders = await db
+		.select()
+		.from(orders)
+		.where(conditions.length > 0 ? and(...conditions) : undefined);
 
 	// Aggregate by channel
 	const channelStats: Record<
@@ -64,6 +84,9 @@ export const load = async ({ url }: { url: URL }): Promise<{ economics: Economic
 			order_count: number;
 		}
 	> = {};
+
+	// Monthly trends
+	const monthlyMap: Record<string, { commission: number; other_charges: number; net_payout: number; gross: number }> = {};
 
 	let globalTotalGross = 0;
 	let globalTotalCommission = 0;
@@ -103,6 +126,19 @@ export const load = async ({ url }: { url: URL }): Promise<{ economics: Economic
 		globalTotalCommission += commission;
 		globalTotalOtherCharges += otherCharges;
 		globalTotalNetPayout += netPayout;
+
+		// Monthly trend aggregation
+		if (order.order_date) {
+			const d = new Date(order.order_date);
+			const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+			if (!monthlyMap[monthKey]) {
+				monthlyMap[monthKey] = { commission: 0, other_charges: 0, net_payout: 0, gross: 0 };
+			}
+			monthlyMap[monthKey].commission += commission;
+			monthlyMap[monthKey].other_charges += otherCharges;
+			monthlyMap[monthKey].net_payout += netPayout;
+			monthlyMap[monthKey].gross += gross;
+		}
 	}
 
 	// Convert to array and calculate rates
@@ -136,6 +172,18 @@ export const load = async ({ url }: { url: URL }): Promise<{ economics: Economic
 	// Sort by commission rate (ascending - lower is better)
 	economicsChannels.sort((a, b) => a.commission_rate - b.commission_rate);
 
+	// Monthly trends sorted
+	const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+	const monthlyTrends: MonthlyEconomics[] = Object.entries(monthlyMap)
+		.sort(([a], [b]) => a.localeCompare(b))
+		.map(([key, data]) => {
+			const [y, m] = key.split('-');
+			return {
+				month: `${monthNames[parseInt(m, 10) - 1]} ${y}`,
+				...data
+			};
+		});
+
 	// Calculate summary
 	const avgCommissionRate =
 		globalTotalGross > 0 ? (globalTotalCommission / globalTotalGross) * 100 : 0;
@@ -147,6 +195,7 @@ export const load = async ({ url }: { url: URL }): Promise<{ economics: Economic
 	return {
 		economics: {
 			channels: economicsChannels,
+			monthly_trends: monthlyTrends,
 			date_range: {
 				start: start || '',
 				end: end || ''

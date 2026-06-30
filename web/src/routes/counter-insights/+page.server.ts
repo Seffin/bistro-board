@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import { orders, order_payments } from '$lib/server/db/schema';
-import { eq, and, between, inArray } from 'drizzle-orm';
+import { and, between, inArray, ilike } from 'drizzle-orm';
 import { parseDateRange } from '$lib/utils/date-filter';
 
 export interface TopItem {
@@ -15,10 +15,19 @@ export interface PaymentMethod {
 	percentage: number;
 }
 
+export interface DailyTrend {
+	date: string;
+	orders: number;
+	revenue: number;
+}
+
 export interface CounterInsightsData {
 	top_items: TopItem[];
 	payment_mix: PaymentMethod[];
 	total_orders: number;
+	total_revenue: number;
+	avg_order_value: number;
+	daily_trends: DailyTrend[];
 	date_range: {
 		start: string;
 		end: string;
@@ -28,23 +37,23 @@ export interface CounterInsightsData {
 export const load = async ({ url }: { url: URL }): Promise<{ insights: CounterInsightsData }> => {
 	const { start, end } = parseDateRange(url);
 
-	// Fetch counter channel orders with optional date filtering
-	const counterOrders =
-		start && end
-			? await db
-					.select()
-					.from(orders)
-					.where(
-						and(
-							eq(orders.channel, 'counter'),
-							between(
-								orders.order_date,
-								new Date(`${start}T00:00:00Z`),
-								new Date(`${end}T23:59:59Z`)
-							)
-						)
-					)
-			: await db.select().from(orders).where(eq(orders.channel, 'counter'));
+	// Build conditions — use ilike for case-insensitive channel matching
+	const conditions = [ilike(orders.channel, 'counter')];
+	if (start && end) {
+		conditions.push(
+			between(
+				orders.order_date,
+				new Date(`${start}T00:00:00Z`),
+				new Date(`${end}T23:59:59Z`)
+			)
+		);
+	}
+
+	// Fetch counter channel orders with case-insensitive matching
+	const counterOrders = await db
+		.select()
+		.from(orders)
+		.where(and(...conditions));
 
 	// Filter out cancelled/failed orders and parse items_summary
 	const validOrders = counterOrders.filter((order) => {
@@ -52,9 +61,27 @@ export const load = async ({ url }: { url: URL }): Promise<{ insights: CounterIn
 		return status !== 'cancelled' && status !== 'failed';
 	});
 
+	// Calculate revenue metrics
+	let totalRevenue = 0;
+	const dailyMap: Record<string, { orders: number; revenue: number }> = {};
+
 	// Aggregate items by frequency
 	const itemCounts: Record<string, number> = {};
 	for (const order of validOrders) {
+		const gross = order.grand_total || 0;
+		totalRevenue += gross;
+
+		// Daily trend aggregation
+		if (order.order_date) {
+			const d = new Date(order.order_date);
+			const dateKey = d.toISOString().split('T')[0];
+			if (!dailyMap[dateKey]) {
+				dailyMap[dateKey] = { orders: 0, revenue: 0 };
+			}
+			dailyMap[dateKey].orders++;
+			dailyMap[dateKey].revenue += gross;
+		}
+
 		if (!order.items_summary) continue;
 
 		const items = order.items_summary
@@ -125,11 +152,21 @@ export const load = async ({ url }: { url: URL }): Promise<{ insights: CounterIn
 		payment.percentage = totalPayments > 0 ? (payment.count / totalPayments) * 100 : 0;
 	}
 
+	// Build daily trends sorted
+	const dailyTrends: DailyTrend[] = Object.entries(dailyMap)
+		.map(([date, data]) => ({ date, ...data }))
+		.sort((a, b) => a.date.localeCompare(b.date));
+
+	const avgOrderValue = validOrders.length > 0 ? totalRevenue / validOrders.length : 0;
+
 	return {
 		insights: {
 			top_items: topItems,
 			payment_mix: paymentMix,
 			total_orders: validOrders.length,
+			total_revenue: totalRevenue,
+			avg_order_value: avgOrderValue,
+			daily_trends: dailyTrends,
 			date_range: {
 				start: start || '',
 				end: end || ''

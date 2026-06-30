@@ -1,6 +1,11 @@
 <script lang="ts">
 	import DateRangeHeader from '$lib/components/DateRangeHeader.svelte';
 	import KPICard from '$lib/components/KPICard.svelte';
+	import { getCommonChartOptions } from '$lib/utils/chart-helpers';
+	import { themeState } from '$lib/stores/theme.svelte';
+	import ApexCharts from 'apexcharts';
+	import { onMount } from 'svelte';
+	import type { ApexOptions } from 'apexcharts';
 
 	let { data } = $props();
 	const promo = $derived(data.promo);
@@ -13,6 +18,98 @@
 			maximumFractionDigits: 0
 		}).format(amount);
 	}
+
+	let distributionChartContainer: HTMLDivElement | undefined = $state();
+	let penetrationChartContainer: HTMLDivElement | undefined = $state();
+	
+	let distributionChart: ApexCharts | undefined;
+	let penetrationChart: ApexCharts | undefined;
+
+	onMount(() => {
+		return () => {
+			distributionChart?.destroy();
+			penetrationChart?.destroy();
+		};
+	});
+
+	// Discount Distribution Bar Chart
+	$effect(() => {
+		if (!distributionChartContainer || promo.discount_buckets.length === 0) return;
+
+		const base = getCommonChartOptions(themeState.current);
+		const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
+		
+		const options: ApexOptions = {
+			...base,
+			chart: { ...base.chart, type: 'bar', height: 350 },
+			series: [
+				{
+					name: 'Orders',
+					data: promo.discount_buckets.map(b => b.order_count)
+				}
+			],
+			xaxis: {
+				categories: promo.discount_buckets.map(b => b.bucket_range),
+				labels: { style: { colors: labelColor } }
+			},
+			yaxis: {
+				labels: { style: { colors: labelColor } }
+			},
+			colors: ['#8b5cf6'],
+			plotOptions: {
+				bar: { borderRadius: 4, distributed: true }
+			},
+			dataLabels: {
+				enabled: true,
+				formatter: (val: number) => val.toString(),
+				style: { colors: ['#fff'] }
+			},
+			legend: { show: false }
+		};
+
+		if (!distributionChart) {
+			distributionChart = new ApexCharts(distributionChartContainer, options);
+			distributionChart.render();
+		} else {
+			distributionChart.updateOptions(options);
+		}
+	});
+
+	// Channel Promo Penetration Donut Chart
+	$effect(() => {
+		if (!penetrationChartContainer || promo.channel_breakdown.length === 0) return;
+
+		const base = getCommonChartOptions(themeState.current);
+		
+		const options: ApexOptions = {
+			...base,
+			chart: { ...base.chart, type: 'donut', height: 350 },
+			series: promo.channel_breakdown.map(c => c.total_discount),
+			labels: promo.channel_breakdown.map(c => c.channel),
+			colors: ['#3b82f6', '#f97316', '#e53935', '#10b981', '#6b7280'],
+			dataLabels: {
+				enabled: true,
+				formatter: (val: number) => `${val.toFixed(1)}%`,
+				style: { colors: ['#fff'] },
+				dropShadow: { enabled: false }
+			},
+			legend: {
+				position: 'bottom',
+				labels: { colors: themeState.current === 'dark' ? '#e5e7eb' : '#374151' }
+			},
+			stroke: {
+				width: 2,
+				colors: [themeState.current === 'dark' ? '#1e293b' : '#ffffff']
+			}
+		};
+
+		if (!penetrationChart) {
+			penetrationChart = new ApexCharts(penetrationChartContainer, options);
+			penetrationChart.render();
+		} else {
+			penetrationChart.updateOptions(options);
+		}
+	});
 </script>
 
 <svelte:head>
@@ -49,6 +146,20 @@
 	</div>
 
 	{#if promo.discount_buckets.length > 0}
+		<!-- Charts Row -->
+		<div class="charts-row">
+			<div class="chart-card card distribution-chart">
+				<h3>Discount Distribution</h3>
+				<p class="chart-subtitle">Number of orders by discount range</p>
+				<div bind:this={distributionChartContainer}></div>
+			</div>
+			<div class="chart-card card penetration-chart">
+				<h3>Discount Value by Channel</h3>
+				<p class="chart-subtitle">Share of total discount value</p>
+				<div bind:this={penetrationChartContainer}></div>
+			</div>
+		</div>
+
 		<!-- Discount Buckets Table -->
 		<div class="card table-card">
 			<h3>Discount Distribution Analysis</h3>
@@ -82,6 +193,39 @@
 								</td>
 								<td class="text-right">
 									<span class="amount">{formatCurrency(bucket.total_amount)}</span>
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<!-- Channel Breakdown Table -->
+		<div class="card table-card">
+			<h3>Channel Breakdown</h3>
+			<div class="table-container">
+				<table>
+					<thead>
+						<tr>
+							<th>Channel</th>
+							<th class="text-right">Orders w/ Promo</th>
+							<th class="text-right">Total Orders</th>
+							<th class="text-right">Promo Penetration</th>
+							<th class="text-right">Total Discount Value</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each promo.channel_breakdown as channel}
+							<tr>
+								<td class="font-bold">{channel.channel}</td>
+								<td class="text-right">{channel.orders_with_promo}</td>
+								<td class="text-right">{channel.total_orders}</td>
+								<td class="text-right">
+									<span class="percent">{channel.penetration_rate.toFixed(1)}%</span>
+								</td>
+								<td class="text-right">
+									<span class="total">{formatCurrency(channel.total_discount)}</span>
 								</td>
 							</tr>
 						{/each}
@@ -124,7 +268,7 @@
 					<h4>Top Bucket</h4>
 					<p class="value">
 						{#if promo.discount_buckets.length > 0}
-							{promo.discount_buckets[0].bucket_range}
+							{promo.discount_buckets.reduce((max, b) => max.order_count > b.order_count ? max : b).bucket_range}
 						{:else}
 							N/A
 						{/if}
@@ -176,6 +320,29 @@
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 		gap: 1.5rem;
+	}
+
+	.charts-row {
+		display: grid;
+		grid-template-columns: 2fr 1fr;
+		gap: 1.5rem;
+	}
+
+	.chart-card {
+		padding: 1.5rem 2rem;
+	}
+
+	.chart-card h3 {
+		font-size: 1.1rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		margin-bottom: 0.5rem;
+	}
+
+	.chart-subtitle {
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+		margin-bottom: 1rem;
 	}
 
 	.table-card {
@@ -320,6 +487,12 @@
 		border: 1px solid var(--border-color);
 		border-radius: 0.5rem;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+	}
+
+	@media (max-width: 1024px) {
+		.charts-row {
+			grid-template-columns: 1fr;
+		}
 	}
 
 	@media (max-width: 768px) {

@@ -2,6 +2,11 @@
 	import DateRangeHeader from '$lib/components/DateRangeHeader.svelte';
 	import KPICard from '$lib/components/KPICard.svelte';
 	import { page } from '$app/state';
+	import { getCommonChartOptions } from '$lib/utils/chart-helpers';
+	import { themeState } from '$lib/stores/theme.svelte';
+	import ApexCharts from 'apexcharts';
+	import { onMount } from 'svelte';
+	import type { ApexOptions } from 'apexcharts';
 
 	let { data } = $props();
 	const ledger = $derived(data.ledger);
@@ -23,6 +28,106 @@
 			day: 'numeric'
 		});
 	}
+
+	let trendChartContainer: HTMLDivElement | undefined = $state();
+	let mixChartContainer: HTMLDivElement | undefined = $state();
+	
+	let trendChart: ApexCharts | undefined;
+	let mixChart: ApexCharts | undefined;
+
+	onMount(() => {
+		return () => {
+			trendChart?.destroy();
+			mixChart?.destroy();
+		};
+	});
+
+	// Daily income trend line chart
+	$effect(() => {
+		if (!trendChartContainer || ledger.daily_breakdown.length === 0) return;
+
+		// Reverse to show chronological order
+		const chartData = [...ledger.daily_breakdown].reverse();
+
+		const base = getCommonChartOptions(themeState.current);
+		const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
+		
+		const options: ApexOptions = {
+			...base,
+			chart: { ...base.chart, type: 'area', height: 300 },
+			series: [
+				{ name: 'Total Income', data: chartData.map(d => d.total) },
+				{ name: 'Counter', data: chartData.map(d => d.counter) }
+			],
+			xaxis: {
+				categories: chartData.map(d => {
+					const date = new Date(d.date);
+					return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+				}),
+				labels: { style: { colors: labelColor, fontSize: '10px' }, rotate: -45, rotateAlways: chartData.length > 15 }
+			},
+			yaxis: {
+				labels: {
+					style: { colors: labelColor },
+					formatter: (val: number) => `₹${(val / 1000).toFixed(1)}K`
+				}
+			},
+			colors: ['#6366f1', '#3b82f6'],
+			stroke: { curve: 'smooth', width: 2 },
+			fill: {
+				type: 'gradient',
+				gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05, stops: [0, 90, 100] }
+			},
+			dataLabels: { enabled: false }
+		};
+
+		if (!trendChart) {
+			trendChart = new ApexCharts(trendChartContainer, options);
+			trendChart.render();
+		} else {
+			trendChart.updateOptions(options);
+		}
+	});
+
+	// Channel mix pie chart
+	$effect(() => {
+		if (!mixChartContainer || ledger.daily_breakdown.length === 0) return;
+
+		const totalCounter = ledger.daily_breakdown.reduce((sum, d) => sum + d.counter, 0);
+		const totalSwiggy = ledger.daily_breakdown.reduce((sum, d) => sum + d.swiggy, 0);
+		const totalZomato = ledger.daily_breakdown.reduce((sum, d) => sum + d.zomato, 0);
+		const totalOther = ledger.daily_breakdown.reduce((sum, d) => sum + d.other, 0);
+
+		const base = getCommonChartOptions(themeState.current);
+		const options: ApexOptions = {
+			...base,
+			chart: { ...base.chart, type: 'donut', height: 300 },
+			series: [totalCounter, totalSwiggy, totalZomato, totalOther],
+			labels: ['Counter', 'Swiggy', 'Zomato', 'Other'],
+			colors: ['#3b82f6', '#f97316', '#e53935', '#6b7280'],
+			dataLabels: {
+				enabled: true,
+				formatter: (val: number) => `${val.toFixed(1)}%`,
+				style: { colors: ['#fff'] },
+				dropShadow: { enabled: false }
+			},
+			legend: {
+				position: 'bottom',
+				labels: { colors: themeState.current === 'dark' ? '#e5e7eb' : '#374151' }
+			},
+			stroke: {
+				width: 2,
+				colors: [themeState.current === 'dark' ? '#1e293b' : '#ffffff']
+			}
+		};
+
+		if (!mixChart) {
+			mixChart = new ApexCharts(mixChartContainer, options);
+			mixChart.render();
+		} else {
+			mixChart.updateOptions(options);
+		}
+	});
 </script>
 
 <svelte:head>
@@ -34,7 +139,7 @@
 	<header class="header card">
 		<div>
 			<h1>Business Ledger</h1>
-			<p>Daily income breakdown and financial summary</p>
+			<p>Daily income tracking and profit analysis</p>
 		</div>
 		<DateRangeHeader />
 	</header>
@@ -44,7 +149,12 @@
 		<KPICard
 			title="Total Income"
 			value={formatCurrency(ledger.summary.total_income)}
-			subtitle={`${ledger.summary.days} days`}
+			subtitle={`${ledger.summary.days} days recorded`}
+		/>
+		<KPICard
+			title="Total Expenses"
+			value={formatCurrency(ledger.summary.total_expenses)}
+			subtitle="Across all categories"
 		/>
 		<KPICard
 			title="Net Profit"
@@ -52,13 +162,27 @@
 			subtitle={`${ledger.summary.profit_margin.toFixed(1)}% margin`}
 		/>
 		<KPICard
-			title="Average Daily"
-			value={formatCurrency(ledger.summary.total_income / Math.max(1, ledger.summary.days))}
-			subtitle="Per day"
+			title="Avg Daily Income"
+			value={formatCurrency(ledger.summary.days > 0 ? ledger.summary.total_income / ledger.summary.days : 0)}
+			subtitle="Per recorded day"
 		/>
 	</div>
 
 	{#if ledger.daily_breakdown.length > 0}
+		<!-- Charts Row -->
+		<div class="charts-row">
+			<div class="chart-card card">
+				<h3>Daily Income Trend</h3>
+				<p class="chart-subtitle">Total vs Counter revenue</p>
+				<div bind:this={trendChartContainer}></div>
+			</div>
+			<div class="chart-card card">
+				<h3>Income Mix</h3>
+				<p class="chart-subtitle">Contribution by source</p>
+				<div bind:this={mixChartContainer}></div>
+			</div>
+		</div>
+
 		<!-- Daily Breakdown Table -->
 		<div class="card table-card">
 			<div class="table-header-row">
@@ -122,27 +246,6 @@
 				</table>
 			</div>
 		</div>
-
-		<!-- Channel Summary -->
-		<div class="card summary-card">
-			<h3>Channel Contribution</h3>
-			<div class="summary-grid">
-				{#each [{ label: 'Counter', value: ledger.daily_breakdown.reduce((sum, d) => sum + d.counter, 0), color: '#3b82f6' }, { label: 'Swiggy', value: ledger.daily_breakdown.reduce((sum, d) => sum + d.swiggy, 0), color: '#f97316' }, { label: 'Zomato', value: ledger.daily_breakdown.reduce((sum, d) => sum + d.zomato, 0), color: '#e53935' }, { label: 'Other', value: ledger.daily_breakdown.reduce((sum, d) => sum + d.other, 0), color: '#6b7280' }] as item}
-					<div class="summary-item">
-						<div class="channel-header">
-							<span class="dot" style:background-color={item.color}></span>
-							<span class="channel-name">{item.label}</span>
-						</div>
-						<div class="channel-value">{formatCurrency(item.value)}</div>
-						{#if ledger.summary.total_income > 0}
-							<div class="channel-percent">
-								{((item.value / ledger.summary.total_income) * 100).toFixed(1)}%
-							</div>
-						{/if}
-					</div>
-				{/each}
-			</div>
-		</div>
 	{:else}
 		<div class="empty-state card">
 			<h3>No Ledger Data Available</h3>
@@ -185,6 +288,29 @@
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 		gap: 1.5rem;
+	}
+
+	.charts-row {
+		display: grid;
+		grid-template-columns: 2fr 1fr;
+		gap: 1.5rem;
+	}
+
+	.chart-card {
+		padding: 1.5rem 2rem;
+	}
+
+	.chart-card h3 {
+		font-size: 1.1rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		margin-bottom: 0.5rem;
+	}
+
+	.chart-subtitle {
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+		margin-bottom: 1rem;
 	}
 
 	.table-card {
@@ -267,62 +393,6 @@
 		font-size: 1.05rem;
 	}
 
-	.summary-card {
-		padding: 1.5rem 2rem;
-	}
-
-	.summary-card h3 {
-		font-size: 1.1rem;
-		font-weight: 600;
-		color: var(--text-primary);
-		margin-bottom: 1.5rem;
-	}
-
-	.summary-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: 1rem;
-	}
-
-	.summary-item {
-		padding: 1rem;
-		background: var(--bg-secondary);
-		border-radius: 0.375rem;
-		border: 1px solid var(--border-color);
-	}
-
-	.channel-header {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		margin-bottom: 0.75rem;
-	}
-
-	.dot {
-		width: 10px;
-		height: 10px;
-		border-radius: 50%;
-		flex-shrink: 0;
-	}
-
-	.channel-name {
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: var(--text-primary);
-	}
-
-	.channel-value {
-		font-size: 1.25rem;
-		font-weight: 700;
-		color: var(--text-primary);
-		margin-bottom: 0.25rem;
-	}
-
-	.channel-percent {
-		font-size: 0.8rem;
-		color: var(--text-secondary);
-	}
-
 	.empty-state {
 		padding: 4rem 2rem;
 		text-align: center;
@@ -347,13 +417,29 @@
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 	}
 
+	.btn-outline {
+		border: 1px solid var(--border-color);
+		background: transparent;
+		color: var(--text-primary);
+		border-radius: var(--border-radius);
+		cursor: pointer;
+		text-decoration: none;
+		transition: all 0.2s ease;
+	}
+
+	.btn-outline:hover {
+		background: var(--bg-secondary);
+	}
+
+	@media (max-width: 1024px) {
+		.charts-row {
+			grid-template-columns: 1fr;
+		}
+	}
+
 	@media (max-width: 768px) {
 		.header {
 			flex-direction: column;
-		}
-
-		.summary-grid {
-			grid-template-columns: 1fr;
 		}
 	}
 </style>

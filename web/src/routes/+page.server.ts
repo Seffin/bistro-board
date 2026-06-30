@@ -1,7 +1,7 @@
 import { db } from '$lib/server/db';
 import { orders, expenses } from '$lib/server/db/schema';
 import { getAllChannels } from '$lib/server/config';
-import { between, and, eq } from 'drizzle-orm';
+import { between, and, eq, ilike } from 'drizzle-orm';
 import { getCached } from '$lib/server/cache';
 import { parseDateRange } from '$lib/utils/date-filter';
 
@@ -20,28 +20,28 @@ export async function load({ url }: { url?: URL } = {}) {
 				between(orders.order_date, new Date(`${start}T00:00:00Z`), new Date(`${end}T23:59:59Z`))
 			);
 		}
+
+		// Determine the selected channel for filtering
+		let selectedChannelName: string | null = null;
 		if (channel && channel !== 'all') {
 			const activeChannel = activeChannels.find((c) => c.id === channel);
 			if (activeChannel) {
-				orderConditions.push(eq(orders.channel, activeChannel.name));
+				selectedChannelName = activeChannel.name;
+				orderConditions.push(ilike(orders.channel, activeChannel.name));
 			}
 		}
 
-		let query = db
+		const allOrders = await db
 			.select({
 				channel: orders.channel,
 				status: orders.status,
 				grand_total: orders.grand_total,
 				net_payout: orders.net_payout,
-				order_date: orders.order_date
+				order_date: orders.order_date,
+				discount: orders.discount
 			})
-			.from(orders);
-
-		if (orderConditions.length > 0) {
-			query = query.where(and(...orderConditions)) as any;
-		}
-
-		const allOrders = await query;
+			.from(orders)
+			.where(orderConditions.length > 0 ? and(...orderConditions) : undefined);
 
 		const allExpenses =
 			start && end
@@ -69,6 +69,9 @@ export async function load({ url }: { url?: URL } = {}) {
 		let totalNet = 0;
 		let totalOrders = 0;
 		let successfulOrders = 0;
+
+		// Order status tracking
+		const statusCounts: Record<string, number> = {};
 
 		// Per-channel accumulation map
 		const channelStats: Record<string, { grossSales: number; orderCount: number; aov: number }> =
@@ -110,7 +113,12 @@ export async function load({ url }: { url?: URL } = {}) {
 
 		for (const order of allOrders) {
 			totalOrders++;
-			const status = (order.status || '').toLowerCase();
+			const status = (order.status || 'unknown').toLowerCase();
+
+			// Track order status for donut chart
+			const statusKey = status.charAt(0).toUpperCase() + status.slice(1);
+			statusCounts[statusKey] = (statusCounts[statusKey] || 0) + 1;
+
 			const isCancelled = status === 'cancelled' || status === 'failed';
 
 			if (!isCancelled) {
@@ -224,7 +232,12 @@ export async function load({ url }: { url?: URL } = {}) {
 			return `${monthNames[parseInt(mo, 10) - 1]} ${y}`;
 		});
 
-		const revenueTrendSeries = activeChannels.map((c) => {
+		// Determine which channels to include in charts based on filter
+		const chartChannels = selectedChannelName
+			? activeChannels.filter((c) => c.name.toLowerCase() === selectedChannelName.toLowerCase())
+			: activeChannels;
+
+		const revenueTrendSeries = chartChannels.map((c) => {
 			const cKey = c.name.toLowerCase();
 			return {
 				name: c.name,
@@ -233,13 +246,16 @@ export async function load({ url }: { url?: URL } = {}) {
 			};
 		});
 
-		revenueTrendSeries.push({
-			name: 'Total',
-			color: '#6366f1',
-			data: sortedMonths.map((m) => Number(((monthlyGroups[m]['total'] || 0) / 100000).toFixed(2)))
-		});
+		// Only add Total line when showing all channels
+		if (!selectedChannelName) {
+			revenueTrendSeries.push({
+				name: 'Total',
+				color: '#6366f1',
+				data: sortedMonths.map((m) => Number(((monthlyGroups[m]['total'] || 0) / 100000).toFixed(2)))
+			});
+		}
 
-		const channelMixSeries = activeChannels.map((c) => {
+		const channelMixSeries = chartChannels.map((c) => {
 			const cKey = c.name.toLowerCase();
 			return {
 				name: c.name,
@@ -284,6 +300,18 @@ export async function load({ url }: { url?: URL } = {}) {
 
 		const averageTicketSize = successfulOrders > 0 ? totalGross / successfulOrders : 0;
 
+		// Order Status Distribution
+		const statusLabels = Object.keys(statusCounts);
+		const statusSeries = statusLabels.map((k) => statusCounts[k]);
+		const statusColors = statusLabels.map((label) => {
+			const key = label.toLowerCase();
+			if (key === 'delivered' || key === 'completed') return '#10b981';
+			if (key === 'cancelled') return '#ef4444';
+			if (key === 'failed') return '#f97316';
+			if (key === 'pending') return '#f59e0b';
+			return '#6b7280';
+		});
+
 		return {
 			kpis: {
 				grossRevenue: totalGross,
@@ -327,11 +355,16 @@ export async function load({ url }: { url?: URL } = {}) {
 					]
 				},
 				monthlyContribution: {
-					labels: activeChannels.map((c) => c.name),
-					series: activeChannels.map((c) =>
+					labels: chartChannels.map((c) => c.name),
+					series: chartChannels.map((c) =>
 						Number(((channelStats[c.name.toLowerCase()]?.grossSales || 0) / 100000).toFixed(2))
 					),
-					colors: activeChannels.map((c) => c.color)
+					colors: chartChannels.map((c) => c.color)
+				},
+				orderStatus: {
+					labels: statusLabels,
+					series: statusSeries,
+					colors: statusColors
 				}
 			}
 		};

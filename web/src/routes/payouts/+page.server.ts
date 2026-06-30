@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import { orders } from '$lib/server/db/schema';
-import { between, ne } from 'drizzle-orm';
+import { and, between, ilike, eq, notInArray } from 'drizzle-orm';
 import { parseDateRange } from '$lib/utils/date-filter';
 
 export interface WeeklyPayout {
@@ -10,6 +10,7 @@ export interface WeeklyPayout {
 	counter: number;
 	swiggy: number;
 	zomato: number;
+	other: number;
 	total: number;
 }
 
@@ -27,88 +28,122 @@ export interface PayoutData {
 	};
 }
 
+// Helper to get week string (e.g. "2026-W03")
+function getWeekString(dateObj: Date): string {
+	const date = new Date(dateObj.getTime());
+	date.setHours(0, 0, 0, 0);
+	// Thursday in current week decides the year.
+	date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7));
+	// January 4 is always in week 1.
+	const week1 = new Date(date.getFullYear(), 0, 4);
+	// Adjust to Thursday in week 1 and count number of weeks from date to week1.
+	const weekNumber =
+		1 +
+		Math.round(
+			((date.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7
+		);
+	return `${date.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}`;
+}
+
 export const load = async ({ url }: { url: URL }): Promise<{ payouts: PayoutData }> => {
 	const { start, end } = parseDateRange(url);
 
-	// Fetch orders excluding cancelled/failed
-	let query = db.select().from(orders).where(ne(orders.status, 'cancelled'));
-
+	// Build condition array
+	const conditions = [notInArray(orders.status, ['cancelled', 'failed'])];
 	if (start && end) {
-		query = query.where(
-			between(orders.order_date, new Date(`${start}T00:00:00Z`), new Date(`${end}T23:59:59Z`))
+		conditions.push(
+			between(
+				orders.order_date,
+				new Date(`${start}T00:00:00Z`),
+				new Date(`${end}T23:59:59Z`)
+			)
 		);
 	}
 
-	const orders_data = await query;
+	// Fetch successful orders
+	const query = db
+		.select({
+			order_date: orders.order_date,
+			channel: orders.channel,
+			net_payout: orders.net_payout
+		})
+		.from(orders)
+		.where(and(...conditions));
 
-	// Group by week
-	const weeklyMap = new Map<string, Record<string, number>>();
+	const allOrders = await query;
 
-	for (const order of orders_data) {
-		const orderDate =
-			order.order_date instanceof Date ? order.order_date : new Date(order.order_date);
-		const dayOfWeek = orderDate.getDay();
-		const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+	// Group by Week
+	const weeklyMap: Record<
+		string,
+		{ start_date: string; end_date: string; counter: number; swiggy: number; zomato: number; other: number }
+	> = {};
 
-		const monday = new Date(orderDate);
-		monday.setDate(orderDate.getDate() - diffToMonday);
+	for (const order of allOrders) {
+		if (!order.order_date) continue;
 
-		const weekStart = monday.toISOString().split('T')[0];
-		const weekEnd = new Date(monday);
-		weekEnd.setDate(monday.getDate() + 6);
-		const weekEndStr = weekEnd.toISOString().split('T')[0];
+		const dateObj = new Date(order.order_date);
+		const weekStr = getWeekString(dateObj);
 
-		const weekKey = `${weekStart}_${weekEndStr}`;
+		if (!weeklyMap[weekStr]) {
+			// Find Monday and Sunday of this week
+			const day = dateObj.getDay();
+			const diff = dateObj.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+			const monday = new Date(dateObj.setDate(diff));
+			const sunday = new Date(dateObj.setDate(monday.getDate() + 6));
 
-		if (!weeklyMap.has(weekKey)) {
-			weeklyMap.set(weekKey, {
+			weeklyMap[weekStr] = {
+				start_date: monday.toISOString().split('T')[0],
+				end_date: sunday.toISOString().split('T')[0],
 				counter: 0,
 				swiggy: 0,
-				zomato: 0
-			});
+				zomato: 0,
+				other: 0
+			};
 		}
 
-		const channel = (order.channel || 'other').toLowerCase();
-		const netPayout = parseFloat(
-			order.net_payout?.toString() || order.grand_total?.toString() || '0'
-		);
+		const payout = order.net_payout || 0;
+		const channel = (order.channel || '').toLowerCase();
 
-		const week = weeklyMap.get(weekKey)!;
-		if (channel === 'counter') week.counter += netPayout;
-		else if (channel === 'swiggy') week.swiggy += netPayout;
-		else if (channel === 'zomato') week.zomato += netPayout;
+		if (channel === 'counter') {
+			weeklyMap[weekStr].counter += payout;
+		} else if (channel === 'swiggy') {
+			weeklyMap[weekStr].swiggy += payout;
+		} else if (channel === 'zomato') {
+			weeklyMap[weekStr].zomato += payout;
+		} else {
+			weeklyMap[weekStr].other += payout;
+		}
 	}
 
-	// Convert to array format
-	const weeklyPayouts: WeeklyPayout[] = [];
+	// Convert to array and sort descending by week
+	const weeklyPayouts: WeeklyPayout[] = Object.entries(weeklyMap)
+		.map(([week, data]) => ({
+			week,
+			start_date: data.start_date,
+			end_date: data.end_date,
+			counter: data.counter,
+			swiggy: data.swiggy,
+			zomato: data.zomato,
+			other: data.other,
+			total: data.counter + data.swiggy + data.zomato + data.other
+		}))
+		.sort((a, b) => b.week.localeCompare(a.week));
+
+	// Calculate summary
 	let totalPayout = 0;
-	let highestWeek: WeeklyPayout | null = null;
+	let highestTotal = 0;
+	let highestWeek = '';
 
-	for (const [weekKey, channelData] of weeklyMap) {
-		const [startDate, endDate] = weekKey.split('_');
-		const weekNum = `${startDate.substring(0, 7)}-W${String(Math.ceil(parseInt(startDate.substring(8)) / 7)).padStart(2, '0')}`;
-
-		const total = channelData.counter + channelData.swiggy + channelData.zomato;
-		const payout: WeeklyPayout = {
-			week: weekNum,
-			start_date: startDate,
-			end_date: endDate,
-			...channelData,
-			total
-		};
-
-		weeklyPayouts.push(payout);
-		totalPayout += total;
-
-		if (!highestWeek || payout.total > highestWeek.total) {
-			highestWeek = payout;
+	for (const week of weeklyPayouts) {
+		totalPayout += week.total;
+		if (week.total > highestTotal) {
+			highestTotal = week.total;
+			highestWeek = week.week;
 		}
 	}
 
-	// Sort by date descending
-	weeklyPayouts.sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
-
-	const averageWeekly = weeklyPayouts.length > 0 ? totalPayout / weeklyPayouts.length : 0;
+	const weeksCount = weeklyPayouts.length;
+	const averageWeekly = weeksCount > 0 ? totalPayout / weeksCount : 0;
 
 	return {
 		payouts: {
@@ -116,8 +151,8 @@ export const load = async ({ url }: { url: URL }): Promise<{ payouts: PayoutData
 			summary: {
 				total_payout: totalPayout,
 				average_weekly: averageWeekly,
-				highest_week: highestWeek?.week || '',
-				weeks: weeklyPayouts.length
+				highest_week: highestWeek,
+				weeks: weeksCount
 			},
 			date_range: {
 				start: start || '',

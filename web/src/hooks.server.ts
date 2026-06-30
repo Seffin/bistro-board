@@ -1,23 +1,55 @@
 import type { Handle, HandleServerError } from '@sveltejs/kit';
 import { redirect } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import { verifySessionToken, SESSION_COOKIE_NAME } from '$lib/server/auth';
+import {
+	verifySessionToken,
+	createSessionToken,
+	SESSION_COOKIE_NAME,
+	SESSION_MAX_AGE
+} from '$lib/server/auth';
 import logger from '$lib/server/logger';
+
+/**
+ * Resolves a consistent session secret. Falls back to a dev-only secret,
+ * but warns loudly in logs when it does so.
+ */
+function getSessionSecret(): string {
+	const secret = env.SESSION_SECRET;
+	if (!secret) {
+		logger.warn('SESSION_SECRET env variable not set — using dev fallback. Set it in .env for production.');
+	}
+	return secret || 'dev-fallback-secret-change-me';
+}
 
 /**
  * Server hook: protects all routes except /login by checking for a valid session cookie.
  * On valid session, populates event.locals.user for downstream use.
+ * Refreshes the session cookie on each request to prevent expiry during active sessions.
  * Logs all requests with timing for observability.
  */
 export const handle: Handle = async ({ event, resolve }) => {
 	const start = Date.now();
-	const sessionSecret = env.SESSION_SECRET || 'dev-fallback-secret-change-me';
+	const sessionSecret = getSessionSecret();
 	const token = event.cookies.get(SESSION_COOKIE_NAME);
 
 	if (token) {
 		const username = verifySessionToken(token, sessionSecret);
 		if (username) {
 			event.locals.user = { username };
+
+			// Refresh the session token to extend expiry on each request
+			// This prevents the user from being logged out during active sessions
+			const refreshedToken = createSessionToken(username, sessionSecret);
+			event.cookies.set(SESSION_COOKIE_NAME, refreshedToken, {
+				path: '/',
+				httpOnly: true,
+				sameSite: 'lax',
+				secure: env.NODE_ENV === 'production',
+				maxAge: SESSION_MAX_AGE
+			});
+		} else {
+			// Token is invalid or expired — clear it to prevent redirect loops
+			event.cookies.delete(SESSION_COOKIE_NAME, { path: '/' });
 		}
 	}
 

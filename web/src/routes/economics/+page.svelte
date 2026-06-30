@@ -2,9 +2,11 @@
 	import { page } from '$app/state';
 	import DateRangeHeader from '$lib/components/DateRangeHeader.svelte';
 	import KPICard from '$lib/components/KPICard.svelte';
-	import { formatCurrency } from '$lib/utils/chart-helpers';
+	import { formatCurrency, getCommonChartOptions } from '$lib/utils/chart-helpers';
+	import { themeState } from '$lib/stores/theme.svelte';
 	import ApexCharts from 'apexcharts';
 	import { onMount } from 'svelte';
+	import type { ApexOptions } from 'apexcharts';
 
 	let { data } = $props();
 	const economics = $derived(data.economics);
@@ -18,102 +20,205 @@
 		return channelColorMap[channelId] || '#6b7280';
 	}
 
-	let selectedChannel = $state(economics.channels[0]?.channel_id || '');
-	import type { ApexOptions } from 'apexcharts';
-
-	// Chart instances
+	// Chart instances & containers
 	let commissionChartContainer: HTMLDivElement | undefined = $state();
 	let payoutRatioChartContainer: HTMLDivElement | undefined = $state();
 	let leakageChartContainer: HTMLDivElement | undefined = $state();
+	let trendChartContainer: HTMLDivElement | undefined = $state();
+
+	let commissionChart: ApexCharts | undefined;
+	let payoutRatioChart: ApexCharts | undefined;
+	let leakageChart: ApexCharts | undefined;
+	let trendChart: ApexCharts | undefined;
 
 	onMount(() => {
-		if (economics.channels.length > 0) {
-			renderCommissionChart();
-			renderPayoutRatioChart();
-			renderLeakageChart();
-		}
+		return () => {
+			commissionChart?.destroy();
+			payoutRatioChart?.destroy();
+			leakageChart?.destroy();
+			trendChart?.destroy();
+		};
 	});
 
-	function renderCommissionChart() {
-		if (!commissionChartContainer) return;
+	// Use $effect so charts re-render when data/theme changes
+	$effect(() => {
+		if (!commissionChartContainer || economics.channels.length === 0) return;
 
+		const base = getCommonChartOptions(themeState.current);
+		const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
 		const options: ApexOptions = {
-			chart: { type: 'bar', height: 300 },
+			...base,
+			chart: { ...base.chart, type: 'bar', height: 300 },
 			series: [
 				{
 					name: 'Commission Rate (%)',
-					data: economics.channels.map((c: any) => c.commission_rate)
+					data: economics.channels.map((c: any) => Number(c.commission_rate.toFixed(2)))
 				}
 			],
 			xaxis: {
-				categories: economics.channels.map((c: any) => c.channel_name)
+				categories: economics.channels.map((c: any) => c.channel_name),
+				labels: { style: { colors: labelColor } }
+			},
+			yaxis: {
+				labels: {
+					style: { colors: labelColor },
+					formatter: (val: number) => `${val.toFixed(1)}%`
+				}
 			},
 			colors: economics.channels.map((c: any) => getChannelColor(c.channel_id)),
 			plotOptions: {
-				bar: { distributed: true }
+				bar: { distributed: true, borderRadius: 4 }
 			},
 			dataLabels: {
 				enabled: true,
-				formatter: (val: number) => `${val.toFixed(1)}%`
+				formatter: (val: number) => `${val.toFixed(1)}%`,
+				style: { colors: ['#fff'] }
 			}
 		};
 
-		new ApexCharts(commissionChartContainer, options).render();
-	}
+		if (!commissionChart) {
+			commissionChart = new ApexCharts(commissionChartContainer, options);
+			commissionChart.render();
+		} else {
+			commissionChart.updateOptions(options);
+		}
+	});
 
-	function renderPayoutRatioChart() {
-		if (!payoutRatioChartContainer) return;
+	$effect(() => {
+		if (!payoutRatioChartContainer || economics.channels.length === 0) return;
 
+		const base = getCommonChartOptions(themeState.current);
+		const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
 		const options: ApexOptions = {
-			chart: { type: 'bar', height: 300 },
+			...base,
+			chart: { ...base.chart, type: 'bar', height: 300 },
 			series: [
 				{
 					name: 'Payout Ratio (%)',
-					data: economics.channels.map((c: any) => c.payout_ratio)
+					data: economics.channels.map((c: any) => Number(c.payout_ratio.toFixed(2)))
 				}
 			],
 			xaxis: {
-				categories: economics.channels.map((c: any) => c.channel_name)
+				categories: economics.channels.map((c: any) => c.channel_name),
+				labels: { style: { colors: labelColor } }
+			},
+			yaxis: {
+				labels: {
+					style: { colors: labelColor },
+					formatter: (val: number) => `${val.toFixed(1)}%`
+				}
 			},
 			colors: economics.channels.map((c: any) => getChannelColor(c.channel_id)),
 			plotOptions: {
-				bar: { distributed: true }
+				bar: { distributed: true, borderRadius: 4 }
 			},
 			dataLabels: {
 				enabled: true,
-				formatter: (val: number) => `${val.toFixed(1)}%`
+				formatter: (val: number) => `${val.toFixed(1)}%`,
+				style: { colors: ['#fff'] }
 			}
 		};
 
-		new ApexCharts(payoutRatioChartContainer, options).render();
-	}
+		if (!payoutRatioChart) {
+			payoutRatioChart = new ApexCharts(payoutRatioChartContainer, options);
+			payoutRatioChart.render();
+		} else {
+			payoutRatioChart.updateOptions(options);
+		}
+	});
 
-	function renderLeakageChart() {
-		if (!leakageChartContainer) return;
+	$effect(() => {
+		if (!leakageChartContainer || economics.channels.length === 0) return;
 
+		const base = getCommonChartOptions(themeState.current);
+		const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
+
+		// Stacked bar: Commission + Other Charges
 		const options: ApexOptions = {
-			chart: { type: 'bar', height: 300 },
+			...base,
+			chart: { ...base.chart, type: 'bar', height: 300, stacked: true },
 			series: [
 				{
-					name: 'Leakage Rate (%)',
-					data: economics.channels.map((c: any) => c.leakage_rate)
+					name: 'Commission',
+					data: economics.channels.map((c: any) => Number((c.total_commission / 100000).toFixed(2)))
+				},
+				{
+					name: 'Other Charges',
+					data: economics.channels.map((c: any) => Number((c.total_other_charges / 100000).toFixed(2)))
 				}
 			],
 			xaxis: {
-				categories: economics.channels.map((c: any) => c.channel_name)
+				categories: economics.channels.map((c: any) => c.channel_name),
+				labels: { style: { colors: labelColor } }
 			},
-			colors: economics.channels.map((c: any) => getChannelColor(c.channel_id)),
+			yaxis: {
+				title: {
+					text: 'Amount (Lakhs)',
+					style: { color: labelColor }
+				},
+				labels: {
+					style: { colors: labelColor },
+					formatter: (val: number) => `₹${val} L`
+				}
+			},
+			colors: ['#f97316', '#ef4444'],
 			plotOptions: {
-				bar: { distributed: true }
+				bar: { borderRadius: 4 }
 			},
-			dataLabels: {
-				enabled: true,
-				formatter: (val: number) => `${val.toFixed(1)}%`
-			}
+			dataLabels: { enabled: false }
 		};
 
-		new ApexCharts(leakageChartContainer, options).render();
-	}
+		if (!leakageChart) {
+			leakageChart = new ApexCharts(leakageChartContainer, options);
+			leakageChart.render();
+		} else {
+			leakageChart.updateOptions(options);
+		}
+	});
+
+	// Monthly trend chart
+	$effect(() => {
+		if (!trendChartContainer || economics.monthly_trends.length === 0) return;
+
+		const base = getCommonChartOptions(themeState.current);
+		const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
+		const options: ApexOptions = {
+			...base,
+			chart: { ...base.chart, type: 'line', height: 300 },
+			series: [
+				{
+					name: 'Commission',
+					data: economics.monthly_trends.map((m: any) => Number((m.commission / 100000).toFixed(2)))
+				},
+				{
+					name: 'Net Payout',
+					data: economics.monthly_trends.map((m: any) => Number((m.net_payout / 100000).toFixed(2)))
+				}
+			],
+			xaxis: {
+				categories: economics.monthly_trends.map((m: any) => m.month),
+				labels: { style: { colors: labelColor } }
+			},
+			yaxis: {
+				title: { text: 'Amount (Lakhs)', style: { color: labelColor } },
+				labels: {
+					style: { colors: labelColor },
+					formatter: (val: number) => `₹${val} L`
+				}
+			},
+			colors: ['#f97316', '#10b981'],
+			stroke: { curve: 'smooth', width: 2 },
+			markers: { size: 3 },
+			dataLabels: { enabled: false }
+		};
+
+		if (!trendChart) {
+			trendChart = new ApexCharts(trendChartContainer, options);
+			trendChart.render();
+		} else {
+			trendChart.updateOptions(options);
+		}
+	});
 </script>
 
 <svelte:head>
@@ -151,30 +256,35 @@
 			<KPICard
 				title="Net Payout"
 				value={formatCurrency(economics.summary.total_net_payout, '₹')}
-				subtitle={`${((economics.summary.total_net_payout / economics.summary.total_gross) * 100).toFixed(1)}% payout ratio`}
+				subtitle={`${economics.summary.total_gross > 0 ? ((economics.summary.total_net_payout / economics.summary.total_gross) * 100).toFixed(1) : '0'}% payout ratio`}
 			/>
 		</div>
 
-		<!-- Charts Row 1 -->
+		<!-- Charts Row 1: Commission vs Payout -->
 		<div class="charts-row">
 			<div class="chart-card card">
 				<h3>Commission Rate by Channel</h3>
-				<p class="chart-subtitle">Lower is better</p>
+				<p class="chart-subtitle">Lower is better — percentage of gross sales taken as commission</p>
 				<div bind:this={commissionChartContainer}></div>
 			</div>
 			<div class="chart-card card">
 				<h3>Payout Ratio by Channel</h3>
-				<p class="chart-subtitle">Higher is better</p>
+				<p class="chart-subtitle">Higher is better — percentage of gross sales received as payout</p>
 				<div bind:this={payoutRatioChartContainer}></div>
 			</div>
 		</div>
 
-		<!-- Charts Row 2 -->
+		<!-- Charts Row 2: Leakage (stacked bar) + Monthly Trend -->
 		<div class="charts-row">
 			<div class="chart-card card">
-				<h3>Margin Leakage by Channel</h3>
-				<p class="chart-subtitle">Commission + Other Charges</p>
+				<h3>Margin Leakage Breakdown</h3>
+				<p class="chart-subtitle">Commission + Other Charges by channel (in Lakhs)</p>
 				<div bind:this={leakageChartContainer}></div>
+			</div>
+			<div class="chart-card card">
+				<h3>Monthly Commission vs Payout Trend</h3>
+				<p class="chart-subtitle">How fees and payouts change over time</p>
+				<div bind:this={trendChartContainer}></div>
 			</div>
 		</div>
 

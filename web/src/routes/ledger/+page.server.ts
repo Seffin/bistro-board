@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
-import { income_register } from '$lib/server/db/schema';
-import { between } from 'drizzle-orm';
+import { income_register, expenses } from '$lib/server/db/schema';
+import { between, gte, lte, and } from 'drizzle-orm';
 import { parseDateRange } from '$lib/utils/date-filter';
 
 export interface DailyIncomeBreakdown {
@@ -16,6 +16,7 @@ export interface LedgerData {
 	daily_breakdown: DailyIncomeBreakdown[];
 	summary: {
 		total_income: number;
+		total_expenses: number;
 		net_profit: number;
 		profit_margin: number;
 		days: number;
@@ -30,62 +31,78 @@ export const load = async ({ url }: { url: URL }): Promise<{ ledger: LedgerData 
 	const { start, end } = parseDateRange(url);
 
 	// Fetch income records with optional date filtering
-	let query = db.select().from(income_register);
-
-	if (start && end) {
-		query = query.where(
-			between(income_register.date, new Date(`${start}T00:00:00Z`), new Date(`${end}T23:59:59Z`))
+	// The income_register table stores date as TEXT (e.g., "2026-01-15"),
+	// NOT as a timestamp. Use string comparison for filtering.
+	const records = await db
+		.select()
+		.from(income_register)
+		.where(
+			start && end
+				? and(
+						gte(income_register.date, start),
+						lte(income_register.date, end)
+				  )
+				: undefined
 		);
-	}
 
-	const records = await query;
+	// The income_register table has NO 'channel' column.
+	// Actual columns are: petpooja_actual, petpooja_net, swiggy_gross, swiggy_payout,
+	// zomato_gross, zomato_payout, paper_bill, total_income, fed_bank, yes_bank, cash
+	// Map them to channel names:
+	//   counter = petpooja_net (POS/Counter net income)
+	//   swiggy  = swiggy_payout (Swiggy payout amount)
+	//   zomato  = zomato_payout (Zomato payout amount)
+	//   total   = total_income (overall daily total)
 
-	// Group by date
-	const byDate = new Map<string, typeof records>();
-	for (const record of records) {
-		const dateStr =
-			record.date instanceof Date ? record.date.toISOString().split('T')[0] : record.date;
-		if (!byDate.has(dateStr)) {
-			byDate.set(dateStr, []);
-		}
-		byDate.get(dateStr)!.push(record);
-	}
-
-	// Calculate daily breakdown
 	const dailyBreakdown: DailyIncomeBreakdown[] = [];
 	let totalIncome = 0;
 
-	for (const [dateStr, dayRecords] of byDate) {
-		const breakdown: DailyIncomeBreakdown = {
+	for (const record of records) {
+		const dateStr = record.date || '';
+		if (!dateStr) continue;
+
+		const counter = record.petpooja_net || 0;
+		const swiggy = record.swiggy_payout || 0;
+		const zomato = record.zomato_payout || 0;
+		const total = record.total_income || 0;
+		// "other" is total minus known channels
+		const other = Math.max(0, total - counter - swiggy - zomato);
+
+		dailyBreakdown.push({
 			date: dateStr,
-			counter: 0,
-			swiggy: 0,
-			zomato: 0,
-			other: 0,
-			total: 0
-		};
+			counter,
+			swiggy,
+			zomato,
+			other,
+			total
+		});
 
-		for (const record of dayRecords) {
-			const amount = parseFloat(record.amount?.toString() || '0');
-			const channel = (record.channel || 'other').toLowerCase();
-
-			if (channel === 'counter') breakdown.counter += amount;
-			else if (channel === 'swiggy') breakdown.swiggy += amount;
-			else if (channel === 'zomato') breakdown.zomato += amount;
-			else breakdown.other += amount;
-
-			breakdown.total += amount;
-		}
-
-		totalIncome += breakdown.total;
-		dailyBreakdown.push(breakdown);
+		totalIncome += total;
 	}
 
 	// Sort by date descending
-	dailyBreakdown.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+	dailyBreakdown.sort((a, b) => b.date.localeCompare(a.date));
 
-	// Calculate profit (simplified - actual expenses would come from expense table)
-	const netProfit = totalIncome; // Placeholder
+	// Fetch expenses for profit calculation
+	let totalExpenses = 0;
+	if (start && end) {
+		const expenseRecords = await db
+			.select({ amount: expenses.amount })
+			.from(expenses)
+			.where(between(expenses.date, start, end));
+		for (const exp of expenseRecords) {
+			totalExpenses += exp.amount || 0;
+		}
+	} else {
+		const expenseRecords = await db
+			.select({ amount: expenses.amount })
+			.from(expenses);
+		for (const exp of expenseRecords) {
+			totalExpenses += exp.amount || 0;
+		}
+	}
+
+	const netProfit = totalIncome - totalExpenses;
 	const profitMargin = totalIncome > 0 ? (netProfit / totalIncome) * 100 : 0;
 
 	return {
@@ -93,6 +110,7 @@ export const load = async ({ url }: { url: URL }): Promise<{ ledger: LedgerData 
 			daily_breakdown: dailyBreakdown,
 			summary: {
 				total_income: totalIncome,
+				total_expenses: totalExpenses,
 				net_profit: netProfit,
 				profit_margin: profitMargin,
 				days: dailyBreakdown.length

@@ -1,6 +1,11 @@
 <script lang="ts">
 	import DateRangeHeader from '$lib/components/DateRangeHeader.svelte';
 	import KPICard from '$lib/components/KPICard.svelte';
+	import { getCommonChartOptions } from '$lib/utils/chart-helpers';
+	import { themeState } from '$lib/stores/theme.svelte';
+	import ApexCharts from 'apexcharts';
+	import { onMount } from 'svelte';
+	import type { ApexOptions } from 'apexcharts';
 
 	let { data } = $props();
 	const payouts = $derived(data.payouts);
@@ -26,6 +31,104 @@
 	function isHighestWeek(week: string): boolean {
 		return week === payouts.summary.highest_week;
 	}
+
+	let trendChartContainer: HTMLDivElement | undefined = $state();
+	let splitChartContainer: HTMLDivElement | undefined = $state();
+	
+	let trendChart: ApexCharts | undefined;
+	let splitChart: ApexCharts | undefined;
+
+	onMount(() => {
+		return () => {
+			trendChart?.destroy();
+			splitChart?.destroy();
+		};
+	});
+
+	// Weekly trend stacked bar chart
+	$effect(() => {
+		if (!trendChartContainer || payouts.weekly_payouts.length === 0) return;
+
+		// Reverse to show chronological order
+		const chartData = [...payouts.weekly_payouts].reverse();
+
+		const base = getCommonChartOptions(themeState.current);
+		const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
+		
+		const options: ApexOptions = {
+			...base,
+			chart: { ...base.chart, type: 'bar', height: 350, stacked: true },
+			series: [
+				{ name: 'Counter', data: chartData.map(d => Number((d.counter / 1000).toFixed(1))) },
+				{ name: 'Swiggy', data: chartData.map(d => Number((d.swiggy / 1000).toFixed(1))) },
+				{ name: 'Zomato', data: chartData.map(d => Number((d.zomato / 1000).toFixed(1))) },
+				{ name: 'Other', data: chartData.map(d => Number((d.other / 1000).toFixed(1))) }
+			],
+			xaxis: {
+				categories: chartData.map(d => d.week),
+				labels: { style: { colors: labelColor, fontSize: '11px' } }
+			},
+			yaxis: {
+				title: { text: 'Payout (Thousands)', style: { color: labelColor } },
+				labels: {
+					style: { colors: labelColor },
+					formatter: (val: number) => `₹${val}K`
+				}
+			},
+			colors: ['#3b82f6', '#f97316', '#e53935', '#6b7280'],
+			plotOptions: {
+				bar: { borderRadius: 4 }
+			},
+			dataLabels: { enabled: false }
+		};
+
+		if (!trendChart) {
+			trendChart = new ApexCharts(trendChartContainer, options);
+			trendChart.render();
+		} else {
+			trendChart.updateOptions(options);
+		}
+	});
+
+	// Channel split donut chart
+	$effect(() => {
+		if (!splitChartContainer || payouts.weekly_payouts.length === 0) return;
+
+		const totalCounter = payouts.weekly_payouts.reduce((sum, p) => sum + p.counter, 0);
+		const totalSwiggy = payouts.weekly_payouts.reduce((sum, p) => sum + p.swiggy, 0);
+		const totalZomato = payouts.weekly_payouts.reduce((sum, p) => sum + p.zomato, 0);
+		const totalOther = payouts.weekly_payouts.reduce((sum, p) => sum + p.other, 0);
+
+		const base = getCommonChartOptions(themeState.current);
+		const options: ApexOptions = {
+			...base,
+			chart: { ...base.chart, type: 'donut', height: 350 },
+			series: [totalCounter, totalSwiggy, totalZomato, totalOther].filter(v => v > 0),
+			labels: ['Counter', 'Swiggy', 'Zomato', 'Other'].filter((_, i) => [totalCounter, totalSwiggy, totalZomato, totalOther][i] > 0),
+			colors: ['#3b82f6', '#f97316', '#e53935', '#6b7280'].filter((_, i) => [totalCounter, totalSwiggy, totalZomato, totalOther][i] > 0),
+			dataLabels: {
+				enabled: true,
+				formatter: (val: number) => `${val.toFixed(1)}%`,
+				style: { colors: ['#fff'] },
+				dropShadow: { enabled: false }
+			},
+			legend: {
+				position: 'bottom',
+				labels: { colors: themeState.current === 'dark' ? '#e5e7eb' : '#374151' }
+			},
+			stroke: {
+				width: 2,
+				colors: [themeState.current === 'dark' ? '#1e293b' : '#ffffff']
+			}
+		};
+
+		if (!splitChart) {
+			splitChart = new ApexCharts(splitChartContainer, options);
+			splitChart.render();
+		} else {
+			splitChart.updateOptions(options);
+		}
+	});
 </script>
 
 <svelte:head>
@@ -56,12 +159,26 @@
 		/>
 		<KPICard
 			title="Highest Week"
-			value={payouts.summary.highest_week}
-			subtitle={`${formatCurrency(payouts.weekly_payouts[0]?.total || 0)}`}
+			value={payouts.summary.highest_week || 'N/A'}
+			subtitle={payouts.summary.highest_week ? `Total: ${formatCurrency(payouts.weekly_payouts.find(w => w.week === payouts.summary.highest_week)?.total || 0)}` : 'No data'}
 		/>
 	</div>
 
 	{#if payouts.weekly_payouts.length > 0}
+		<!-- Charts Row -->
+		<div class="charts-row">
+			<div class="chart-card card trend-chart">
+				<h3>Weekly Payout Trend</h3>
+				<p class="chart-subtitle">Settlement amount by channel per week</p>
+				<div bind:this={trendChartContainer}></div>
+			</div>
+			<div class="chart-card card split-chart">
+				<h3>Overall Channel Split</h3>
+				<p class="chart-subtitle">Percentage of total payouts</p>
+				<div bind:this={splitChartContainer}></div>
+			</div>
+		</div>
+
 		<!-- Weekly Breakdown Table -->
 		<div class="card table-card">
 			<h3>Weekly Payout Summary</h3>
@@ -73,6 +190,7 @@
 							<th class="text-right">Counter</th>
 							<th class="text-right">Swiggy</th>
 							<th class="text-right">Zomato</th>
+							<th class="text-right">Other</th>
 							<th class="text-right">Total</th>
 						</tr>
 					</thead>
@@ -100,6 +218,9 @@
 									<span class="amount">{formatCurrency(payout.zomato)}</span>
 								</td>
 								<td class="text-right">
+									<span class="amount">{formatCurrency(payout.other)}</span>
+								</td>
+								<td class="text-right">
 									<span class="total">{formatCurrency(payout.total)}</span>
 								</td>
 							</tr>
@@ -113,7 +234,12 @@
 		<div class="card summary-card">
 			<h3>Channel Totals</h3>
 			<div class="summary-grid">
-				{#each [{ label: 'Counter', value: payouts.weekly_payouts.reduce((sum, p) => sum + p.counter, 0), color: '#3b82f6' }, { label: 'Swiggy', value: payouts.weekly_payouts.reduce((sum, p) => sum + p.swiggy, 0), color: '#f97316' }, { label: 'Zomato', value: payouts.weekly_payouts.reduce((sum, p) => sum + p.zomato, 0), color: '#e53935' }] as channel}
+				{#each [
+					{ label: 'Counter', value: payouts.weekly_payouts.reduce((sum, p) => sum + p.counter, 0), color: '#3b82f6' }, 
+					{ label: 'Swiggy', value: payouts.weekly_payouts.reduce((sum, p) => sum + p.swiggy, 0), color: '#f97316' }, 
+					{ label: 'Zomato', value: payouts.weekly_payouts.reduce((sum, p) => sum + p.zomato, 0), color: '#e53935' },
+					{ label: 'Other', value: payouts.weekly_payouts.reduce((sum, p) => sum + p.other, 0), color: '#6b7280' }
+				] as channel}
 					<div class="summary-item">
 						<div class="channel-header">
 							<span class="dot" style:background-color={channel.color}></span>
@@ -171,6 +297,29 @@
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 		gap: 1.5rem;
+	}
+
+	.charts-row {
+		display: grid;
+		grid-template-columns: 2fr 1fr;
+		gap: 1.5rem;
+	}
+
+	.chart-card {
+		padding: 1.5rem 2rem;
+	}
+
+	.chart-card h3 {
+		font-size: 1.1rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		margin-bottom: 0.5rem;
+	}
+
+	.chart-subtitle {
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+		margin-bottom: 1rem;
 	}
 
 	.table-card {
@@ -344,6 +493,12 @@
 		border: 1px solid var(--border-color);
 		border-radius: 0.5rem;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+	}
+
+	@media (max-width: 1024px) {
+		.charts-row {
+			grid-template-columns: 1fr;
+		}
 	}
 
 	@media (max-width: 768px) {

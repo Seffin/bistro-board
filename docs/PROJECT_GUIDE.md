@@ -120,9 +120,24 @@ payout_variance  = actual_payout - ledger.total_income
 - `counter` (Counter Insights): Top items, payment mix, item drill-down modal.
 - `orders` (Order Journal): Filterable/searchable paginated table.
 - `ledger` (Business Ledger): P&L, category charts, expense/income tables.
-- `reconciliation` (Reconciliation): Daily variance (POS vs ledger).
-- `payouts` (Payouts): Weekly settlement rollups, expandable order detail.
-- `promo` (Promo Analysis): Discount buckets, promo % trends, correlation scatter.
+- `reconciliation`: Compare expected payouts against bank settlements. Matches Counter POS against Ledger text dates.
+- **Payout Analytics**: Analyze commission deductions and net settlement amounts by channel over time.
+- **Promo Impact**: Evaluate ROI of discounts using the `discount` column across value buckets.
+
+### Ledger Data Mapping
+
+The `income_register` table does not contain a `channel` column and its `date` column is a text string (not a timestamp). The application maps it as follows:
+- **Counter**: `petpooja_net`
+- **Swiggy**: `swiggy_payout`
+- **Zomato**: `zomato_payout`
+- **Total**: `total_income`
+- **Other**: `total_income - (petpooja_net + swiggy_payout + zomato_payout)`
+
+## Synchronization Pipeline
+
+Data is synced from multiple external sources (emails, Google Sheets, POS API) via Python scripts in the root directory.
+
+> **CRITICAL**: The SvelteKit server executes these scripts via `api/sync`. You **MUST** have Python installed and available in your system `PATH` (as `python`, `python3`, or `py`). If Python is not in your PATH, the sync will fail with exit code 9009 on Windows.
 
 ## 7. Web Framework Deep Dive (`web/`)
 Scaffolded via `npx sv@0.16.1 create --template minimal --types ts --add prettier eslint drizzle="database:postgresql+postgresql:neon"`. Package: `web@0.0.1`.

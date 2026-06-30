@@ -9,6 +9,7 @@
 	import HourlyVelocityChart from '$lib/components/charts/HourlyVelocityChart.svelte';
 	import WeeklyPerformanceChart from '$lib/components/charts/WeeklyPerformanceChart.svelte';
 	import MonthlyContributionChart from '$lib/components/charts/MonthlyContributionChart.svelte';
+	import OrderStatusChart from '$lib/components/charts/OrderStatusChart.svelte';
 	import { formatCurrency } from '$lib/utils/chart-helpers';
 	import {
 		IndianRupee,
@@ -240,6 +241,11 @@
 				labels={charts.monthlyContribution.labels}
 				series={charts.monthlyContribution.series}
 				colors={charts.monthlyContribution.colors}
+			/>
+			<OrderStatusChart
+				labels={charts.orderStatus.labels}
+				series={charts.orderStatus.series}
+				colors={charts.orderStatus.colors}
 			/>
 		</div>
 	</div>
