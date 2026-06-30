@@ -37,9 +37,9 @@
 		import('apexcharts').then((module) => {
 			const ApexCharts = module.default;
 
-			// For radialBar, normalize values to percentages (0-100 scale)
-			const maxVal = Math.max(...aggregatedSeries, 1);
-			const normalizedSeries = aggregatedSeries.map(v => Number(((v / maxVal) * 100).toFixed(1)));
+			// Calculate percentage of total for accurate visual mix
+			const total = aggregatedSeries.reduce((a, b) => a + b, 0) || 1;
+			const normalizedSeries = aggregatedSeries.map(v => Number(((v / total) * 100).toFixed(1)));
 
 			const baseOptions = getCommonChartOptions(themeState.current);
 			const options = {
@@ -76,8 +76,8 @@
 								label: 'Total',
 								color: themeState.current === 'dark' ? '#94a3b8' : '#64748b',
 								formatter: () => {
-									const total = aggregatedSeries.reduce((a, b) => a + b, 0);
-									return `₹${total.toFixed(2)} L`;
+									const sum = aggregatedSeries.reduce((a, b) => a + b, 0);
+									return `₹${sum.toFixed(2)} L`;
 								}
 							}
 						}
