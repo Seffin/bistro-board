@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getCommonChartOptions } from '$lib/utils/chart-helpers';
-	import ApexCharts from 'apexcharts';
+	import type ApexCharts from 'apexcharts';
 	import { themeState } from '$lib/stores/theme.svelte';
 	import { onMount } from 'svelte';
 
@@ -21,50 +21,53 @@
 	$effect(() => {
 		if (!chartNode) return;
 		
-		const baseOptions = getCommonChartOptions(themeState.current);
-		const options = {
-			...baseOptions,
-			chart: {
-				...baseOptions.chart,
-				type: 'line',
-				height: 350
-			},
-			series,
-			xaxis: {
-				categories,
-				labels: {
-					style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
-				}
-			},
-			yaxis: {
-				title: {
-					text: 'Lakhs (₹)',
-					style: { color: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			const baseOptions = getCommonChartOptions(themeState.current);
+			const options = {
+				...baseOptions,
+				chart: {
+					...baseOptions.chart,
+					type: 'line',
+					height: 350
 				},
-				labels: {
-					style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' },
-					formatter: (val: number) => `₹${val} L`
+				series,
+				xaxis: {
+					categories,
+					labels: {
+						style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
+					}
+				},
+				yaxis: {
+					title: {
+						text: 'Lakhs (₹)',
+						style: { color: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
+					},
+					labels: {
+						style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' },
+						formatter: (val: number) => `₹${val} L`
+					}
+				},
+				stroke: {
+					width: [0, 0, 3],
+					curve: 'smooth'
+				},
+				colors: ['#6366f1', '#ef4444', '#10b981'],
+				plotOptions: {
+					bar: {
+						columnWidth: '50%',
+						borderRadius: 2
+					}
 				}
-			},
-			stroke: {
-				width: [0, 0, 3],
-				curve: 'smooth'
-			},
-			colors: ['#6366f1', '#ef4444', '#10b981'],
-			plotOptions: {
-				bar: {
-					columnWidth: '50%',
-					borderRadius: 2
-				}
-			}
-		};
+			};
 
-		if (!chart) {
-			chart = new ApexCharts(chartNode, options);
-			chart.render();
-		} else {
-			chart.updateOptions(options);
-		}
+			if (!chart) {
+				chart = new ApexCharts(chartNode, options);
+				chart.render();
+			} else {
+				chart.updateOptions(options);
+			}
+		});
 	});
 </script>
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getCommonChartOptions } from '$lib/utils/chart-helpers';
-	import ApexCharts from 'apexcharts';
+	import type ApexCharts from 'apexcharts';
 	import { themeState } from '$lib/stores/theme.svelte';
 	import { onMount } from 'svelte';
 
@@ -21,46 +21,49 @@
 	$effect(() => {
 		if (!chartNode) return;
 		
-		const baseOptions = getCommonChartOptions(themeState.current);
-		const options = {
-			...baseOptions,
-			chart: {
-				...baseOptions.chart,
-				type: 'bar',
-				height: 300
-			},
-			series: [{ name: 'Expenses', data: series }],
-			xaxis: {
-				categories: labels,
-				labels: {
-					style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' },
-					formatter: (val: number) => `₹${val} L`
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			const baseOptions = getCommonChartOptions(themeState.current);
+			const options = {
+				...baseOptions,
+				chart: {
+					...baseOptions.chart,
+					type: 'bar',
+					height: 300
+				},
+				series: [{ name: 'Expenses', data: series }],
+				xaxis: {
+					categories: labels,
+					labels: {
+						style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' },
+						formatter: (val: number) => `₹${val} L`
+					}
+				},
+				yaxis: {
+					labels: {
+						style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
+					}
+				},
+				plotOptions: {
+					bar: {
+						borderRadius: 4,
+						horizontal: true,
+						barHeight: '55%'
+					}
+				},
+				colors: ['#ef4444'],
+				dataLabels: {
+					enabled: false
 				}
-			},
-			yaxis: {
-				labels: {
-					style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
-				}
-			},
-			plotOptions: {
-				bar: {
-					borderRadius: 4,
-					horizontal: true,
-					barHeight: '55%'
-				}
-			},
-			colors: ['#ef4444'],
-			dataLabels: {
-				enabled: false
-			}
-		};
+			};
 
-		if (!chart) {
-			chart = new ApexCharts(chartNode, options);
-			chart.render();
-		} else {
-			chart.updateOptions(options);
-		}
+			if (!chart) {
+				chart = new ApexCharts(chartNode, options);
+				chart.render();
+			} else {
+				chart.updateOptions(options);
+			}
+		});
 	});
 </script>
 

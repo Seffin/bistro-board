@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getCommonChartOptions } from '$lib/utils/chart-helpers';
-	import ApexCharts from 'apexcharts';
+	import type ApexCharts from 'apexcharts';
 	import { themeState } from '$lib/stores/theme.svelte';
 	import { onMount } from 'svelte';
 
@@ -21,45 +21,48 @@
 	$effect(() => {
 		if (!chartNode) return;
 		
-		const baseOptions = getCommonChartOptions(themeState.current);
-		const options = {
-			...baseOptions,
-			chart: {
-				...baseOptions.chart,
-				type: 'bar',
-				height: 300
-			},
-			series,
-			xaxis: {
-				categories,
-				labels: {
-					style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
-				}
-			},
-			yaxis: {
-				title: {
-					text: 'Orders',
-					style: { color: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			const baseOptions = getCommonChartOptions(themeState.current);
+			const options = {
+				...baseOptions,
+				chart: {
+					...baseOptions.chart,
+					type: 'bar',
+					height: 300
 				},
-				labels: {
-					style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
+				series,
+				xaxis: {
+					categories,
+					labels: {
+						style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
+					}
+				},
+				yaxis: {
+					title: {
+						text: 'Orders',
+						style: { color: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
+					},
+					labels: {
+						style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
+					}
+				},
+				colors: ['#3b82f6'],
+				plotOptions: {
+					bar: {
+						borderRadius: 4,
+						columnWidth: '60%'
+					}
 				}
-			},
-			colors: ['#3b82f6'],
-			plotOptions: {
-				bar: {
-					borderRadius: 4,
-					columnWidth: '60%'
-				}
-			}
-		};
+			};
 
-		if (!chart) {
-			chart = new ApexCharts(chartNode, options);
-			chart.render();
-		} else {
-			chart.updateOptions(options);
-		}
+			if (!chart) {
+				chart = new ApexCharts(chartNode, options);
+				chart.render();
+			} else {
+				chart.updateOptions(options);
+			}
+		});
 	});
 </script>
 

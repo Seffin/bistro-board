@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getCommonChartOptions } from '$lib/utils/chart-helpers';
-	import ApexCharts from 'apexcharts';
+	import type ApexCharts from 'apexcharts';
 	import { themeState } from '$lib/stores/theme.svelte';
 	import { onMount } from 'svelte';
 
@@ -33,62 +33,66 @@
 
 	$effect(() => {
 		if (!chartNode || !hasValidData) return;
+		
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
 
-		// For radialBar, normalize values to percentages (0-100 scale)
-		const maxVal = Math.max(...aggregatedSeries, 1);
-		const normalizedSeries = aggregatedSeries.map(v => Number(((v / maxVal) * 100).toFixed(1)));
+			// For radialBar, normalize values to percentages (0-100 scale)
+			const maxVal = Math.max(...aggregatedSeries, 1);
+			const normalizedSeries = aggregatedSeries.map(v => Number(((v / maxVal) * 100).toFixed(1)));
 
-		const baseOptions = getCommonChartOptions(themeState.current);
-		const options = {
-			...baseOptions,
-			chart: {
-				...baseOptions.chart,
-				type: 'radialBar',
-				height: 320
-			},
-			series: normalizedSeries,
-			labels,
-			colors,
-			plotOptions: {
-				radialBar: {
-					hollow: { size: '40%' },
-					track: {
-						background: themeState.current === 'dark' ? '#334155' : '#f1f5f9'
-					},
-					dataLabels: {
-						name: { 
-							fontSize: '14px',
-							color: themeState.current === 'dark' ? '#94a3b8' : '#64748b'
+			const baseOptions = getCommonChartOptions(themeState.current);
+			const options = {
+				...baseOptions,
+				chart: {
+					...baseOptions.chart,
+					type: 'radialBar',
+					height: 320
+				},
+				series: normalizedSeries,
+				labels,
+				colors,
+				plotOptions: {
+					radialBar: {
+						hollow: { size: '40%' },
+						track: {
+							background: themeState.current === 'dark' ? '#334155' : '#f1f5f9'
 						},
-						value: {
-							fontSize: '16px',
-							color: themeState.current === 'dark' ? '#f8fafc' : '#0f172a',
-							formatter: (_val: number, opts: any) => {
-								const idx = opts?.seriesIndex ?? 0;
-								return `₹${aggregatedSeries[idx] ?? 0} L`;
-							}
-						},
-						total: {
-							show: true,
-							label: 'Total',
-							color: themeState.current === 'dark' ? '#94a3b8' : '#64748b',
-							formatter: () => {
-								const total = aggregatedSeries.reduce((a, b) => a + b, 0);
-								return `₹${total.toFixed(2)} L`;
+						dataLabels: {
+							name: { 
+								fontSize: '14px',
+								color: themeState.current === 'dark' ? '#94a3b8' : '#64748b'
+							},
+							value: {
+								fontSize: '16px',
+								color: themeState.current === 'dark' ? '#f8fafc' : '#0f172a',
+								formatter: (_val: number, opts: any) => {
+									const idx = opts?.seriesIndex ?? 0;
+									return `₹${aggregatedSeries[idx] ?? 0} L`;
+								}
+							},
+							total: {
+								show: true,
+								label: 'Total',
+								color: themeState.current === 'dark' ? '#94a3b8' : '#64748b',
+								formatter: () => {
+									const total = aggregatedSeries.reduce((a, b) => a + b, 0);
+									return `₹${total.toFixed(2)} L`;
+								}
 							}
 						}
 					}
-				}
-			},
-			stroke: { lineCap: 'round' }
-		};
+				},
+				stroke: { lineCap: 'round' }
+			};
 
-		if (!chart) {
-			chart = new ApexCharts(chartNode, options);
-			chart.render();
-		} else {
-			chart.updateOptions(options);
-		}
+			if (!chart) {
+				chart = new ApexCharts(chartNode, options);
+				chart.render();
+			} else {
+				chart.updateOptions(options);
+			}
+		});
 	});
 </script>
 

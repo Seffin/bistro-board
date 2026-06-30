@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getCommonChartOptions } from '$lib/utils/chart-helpers';
-	import ApexCharts from 'apexcharts';
+	import type ApexCharts from 'apexcharts';
 	import { themeState } from '$lib/stores/theme.svelte';
 	import { onMount } from 'svelte';
 
@@ -21,55 +21,58 @@
 	$effect(() => {
 		if (!chartNode) return;
 		
-		const baseOptions = getCommonChartOptions(themeState.current);
-		const options = {
-			...baseOptions,
-			chart: {
-				...baseOptions.chart,
-				type: 'area',
-				height: 350
-			},
-			series,
-			xaxis: {
-				categories,
-				labels: {
-					style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
-				}
-			},
-			yaxis: {
-				title: {
-					text: 'Revenue (Lakhs)',
-					style: { color: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			const baseOptions = getCommonChartOptions(themeState.current);
+			const options = {
+				...baseOptions,
+				chart: {
+					...baseOptions.chart,
+					type: 'area',
+					height: 350
 				},
-				labels: {
-					style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' },
-					formatter: (val: number) => `₹${val} L`
-				}
-			},
-			colors: series.map(s => s.color),
-			stroke: {
-				curve: 'smooth',
-				width: 2
-			},
-			fill: {
-				type: 'gradient',
-				gradient: {
-					shadeIntensity: 1,
-					opacityFrom: 0.4,
-					opacityTo: 0.05,
-					stops: [0, 90, 100]
-				}
-			},
-			dataLabels: { enabled: false },
-			markers: { size: 0, hover: { size: 4 } }
-		};
+				series,
+				xaxis: {
+					categories,
+					labels: {
+						style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
+					}
+				},
+				yaxis: {
+					title: {
+						text: 'Revenue (Lakhs)',
+						style: { color: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
+					},
+					labels: {
+						style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' },
+						formatter: (val: number) => `₹${val} L`
+					}
+				},
+				colors: series.map(s => s.color),
+				stroke: {
+					curve: 'smooth',
+					width: 2
+				},
+				fill: {
+					type: 'gradient',
+					gradient: {
+						shadeIntensity: 1,
+						opacityFrom: 0.4,
+						opacityTo: 0.05,
+						stops: [0, 90, 100]
+					}
+				},
+				dataLabels: { enabled: false },
+				markers: { size: 0, hover: { size: 4 } }
+			};
 
-		if (!chart) {
-			chart = new ApexCharts(chartNode, options);
-			chart.render();
-		} else {
-			chart.updateOptions(options);
-		}
+			if (!chart) {
+				chart = new ApexCharts(chartNode, options);
+				chart.render();
+			} else {
+				chart.updateOptions(options);
+			}
+		});
 	});
 </script>
 
