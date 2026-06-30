@@ -13,3 +13,5 @@ web/env
 *.db-journal
 *.db-shm
 *.db-wal
+settings.json
+philos_sales.db
