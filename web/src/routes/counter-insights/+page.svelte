@@ -6,6 +6,7 @@
 	import { themeState } from '$lib/stores/theme.svelte';
 	import type ApexCharts from 'apexcharts';
 	import type { ApexOptions } from 'apexcharts';
+	import { onMount } from 'svelte';
 
 	let { data } = $props();
 	const insights = $derived(data.insights);
