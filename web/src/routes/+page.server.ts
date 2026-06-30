@@ -282,12 +282,16 @@ export async function load({ url }: { url?: URL } = {}) {
 			Number((expenseCategories[cat] / 100000).toFixed(2))
 		);
 
+		const averageTicketSize = successfulOrders > 0 ? totalGross / successfulOrders : 0;
+
 		return {
 			kpis: {
+				grossRevenue: totalGross,
 				netPayout: totalNet,
 				revenueRetainedPct,
 				totalVolume: successfulOrders,
 				successRatePct,
+				averageTicketSize,
 				channelStats
 			},
 			charts: {

@@ -1,66 +1,76 @@
 <script lang="ts">
 	import { getCommonChartOptions } from '$lib/utils/chart-helpers';
 	import ApexCharts from 'apexcharts';
+	import { themeState } from '$lib/stores/theme.svelte';
+	import { onMount } from 'svelte';
 
 	let { categories = [], series = [] } = $props<{
 		categories: string[];
 		series: { name: string; data: number[]; color: string }[];
 	}>();
 
-	function chartAction(
-		node: HTMLElement,
-		{
-			categories,
-			series
-		}: { categories: string[]; series: { name: string; data: number[]; color: string }[] }
-	) {
-		const baseOptions = getCommonChartOptions('light');
+	let chartNode: HTMLElement;
+	let chart: ApexCharts;
+
+	onMount(() => {
+		return () => {
+			if (chart) chart.destroy();
+		};
+	});
+
+	$effect(() => {
+		if (!chartNode) return;
+		
+		const baseOptions = getCommonChartOptions(themeState.current);
 		const options = {
 			...baseOptions,
 			chart: {
 				...baseOptions.chart,
-				type: 'line',
+				type: 'area',
 				height: 350
 			},
 			series,
 			xaxis: {
-				categories
+				categories,
+				labels: {
+					style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
+				}
 			},
 			yaxis: {
 				title: {
-					text: 'Revenue (Lakhs)'
+					text: 'Revenue (Lakhs)',
+					style: { color: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
 				},
 				labels: {
+					style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' },
 					formatter: (val: number) => `₹${val} L`
 				}
 			},
+			colors: series.map(s => s.color),
 			stroke: {
-				curve: 'smooth' as const,
-				width: 3
+				curve: 'smooth',
+				width: 2
 			},
-			markers: {
-				size: 4
-			}
+			fill: {
+				type: 'gradient',
+				gradient: {
+					shadeIntensity: 1,
+					opacityFrom: 0.4,
+					opacityTo: 0.05,
+					stops: [0, 90, 100]
+				}
+			},
+			dataLabels: { enabled: false },
+			markers: { size: 0, hover: { size: 4 } }
 		};
 
-		const chart = new ApexCharts(node, options);
-		chart.render();
-
-		return {
-			update({
-				categories: newCat,
-				series: newSer
-			}: {
-				categories: string[];
-				series: { name: string; data: number[]; color: string }[];
-			}) {
-				chart.updateOptions({ xaxis: { categories: newCat }, series: newSer });
-			},
-			destroy() {
-				chart.destroy();
-			}
-		};
-	}
+		if (!chart) {
+			chart = new ApexCharts(chartNode, options);
+			chart.render();
+		} else {
+			chart.updateOptions(options);
+		}
+	});
 </script>
 
 <div class="chart-container card">
@@ -68,7 +78,7 @@
 		<h2>Revenue Trends</h2>
 		<p class="subtitle">Monthly gross performance per channel (in Lakhs)</p>
 	</div>
-	<div use:chartAction={{ categories, series }}></div>
+	<div bind:this={chartNode}></div>
 </div>
 
 <style>
@@ -76,7 +86,7 @@
 		padding: 1.5rem;
 		display: flex;
 		flex-direction: column;
-		background: var(--bg-secondary);
+		background: var(--bg-surface);
 		border-radius: var(--border-radius);
 	}
 

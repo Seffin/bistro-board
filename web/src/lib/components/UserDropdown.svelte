@@ -127,23 +127,23 @@
 
 	.dropdown-menu {
 		position: absolute;
-		top: calc(100% + 0.5rem);
-		right: 0;
+		bottom: calc(100% + 0.5rem);
+		left: 0;
 		width: 220px;
 		background: var(--bg-surface);
 		border-radius: var(--border-radius);
 		box-shadow: var(--shadow-lg);
 		z-index: 50;
-		animation: slideDown 0.15s ease-out;
-		transform-origin: top right;
+		animation: slideUp 0.15s ease-out;
+		transform-origin: bottom left;
 		border: 1px solid var(--border-color);
 		overflow: hidden;
 	}
 
-	@keyframes slideDown {
+	@keyframes slideUp {
 		from {
 			opacity: 0;
-			transform: scale(0.95) translateY(-10px);
+			transform: scale(0.95) translateY(10px);
 		}
 		to {
 			opacity: 1;

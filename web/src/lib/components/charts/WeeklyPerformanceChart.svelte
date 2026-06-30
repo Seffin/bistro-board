@@ -1,33 +1,48 @@
 <script lang="ts">
 	import { getCommonChartOptions } from '$lib/utils/chart-helpers';
 	import ApexCharts from 'apexcharts';
+	import { themeState } from '$lib/stores/theme.svelte';
+	import { onMount } from 'svelte';
 
 	let { categories = [], series = [] } = $props<{
 		categories: string[];
 		series: { name: string; data: number[] }[];
 	}>();
 
-	function chartAction(
-		node: HTMLElement,
-		{ categories, series }: { categories: string[]; series: { name: string; data: number[] }[] }
-	) {
-		const baseOptions = getCommonChartOptions('light');
+	let chartNode: HTMLElement;
+	let chart: ApexCharts;
+
+	onMount(() => {
+		return () => {
+			if (chart) chart.destroy();
+		};
+	});
+
+	$effect(() => {
+		if (!chartNode) return;
+		
+		const baseOptions = getCommonChartOptions(themeState.current);
 		const options = {
 			...baseOptions,
 			chart: {
 				...baseOptions.chart,
-				type: 'bar' as const,
+				type: 'bar',
 				height: 300
 			},
 			series,
 			xaxis: {
-				categories
+				categories,
+				labels: {
+					style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
+				}
 			},
 			yaxis: {
 				title: {
-					text: 'Lakhs (₹)'
+					text: 'Lakhs (₹)',
+					style: { color: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
 				},
 				labels: {
+					style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' },
 					formatter: (val: number) => `₹${val} L`
 				}
 			},
@@ -40,24 +55,13 @@
 			}
 		};
 
-		const chart = new ApexCharts(node, options);
-		chart.render();
-
-		return {
-			update({
-				categories: newCat,
-				series: newSer
-			}: {
-				categories: string[];
-				series: { name: string; data: number[] }[];
-			}) {
-				chart.updateOptions({ xaxis: { categories: newCat }, series: newSer });
-			},
-			destroy() {
-				chart.destroy();
-			}
-		};
-	}
+		if (!chart) {
+			chart = new ApexCharts(chartNode, options);
+			chart.render();
+		} else {
+			chart.updateOptions(options);
+		}
+	});
 </script>
 
 <div class="chart-container card">
@@ -65,7 +69,7 @@
 		<h2>Weekly Performance</h2>
 		<p class="subtitle">Gross revenue distribution by weekday (in Lakhs)</p>
 	</div>
-	<div use:chartAction={{ categories, series }}></div>
+	<div bind:this={chartNode}></div>
 </div>
 
 <style>
@@ -73,7 +77,7 @@
 		padding: 1.5rem;
 		display: flex;
 		flex-direction: column;
-		background: var(--bg-secondary);
+		background: var(--bg-surface);
 		border-radius: var(--border-radius);
 	}
 

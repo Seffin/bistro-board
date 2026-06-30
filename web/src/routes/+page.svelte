@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { enhance } from '$app/forms';
 	import KPICard from '$lib/components/KPICard.svelte';
 	import DateRangeHeader from '$lib/components/DateRangeHeader.svelte';
 	import RevenueTrendsChart from '$lib/components/charts/RevenueTrendsChart.svelte';
@@ -11,6 +10,12 @@
 	import WeeklyPerformanceChart from '$lib/components/charts/WeeklyPerformanceChart.svelte';
 	import MonthlyContributionChart from '$lib/components/charts/MonthlyContributionChart.svelte';
 	import { formatCurrency } from '$lib/utils/chart-helpers';
+	import {
+		IndianRupee,
+		Banknote,
+		ShoppingCart,
+		Ticket
+	} from '@lucide/svelte';
 
 	let { data } = $props();
 	const kpis = $derived(data.kpis);
@@ -66,7 +71,6 @@
 								isSyncing = false;
 							} else if (data.message) {
 								syncLogs.push(data.message);
-								// Trigger reactivity explicitly if needed, but Svelte 5 arrays are deeply reactive by default
 							}
 						} catch (e) {
 							// ignore malformed JSON
@@ -87,7 +91,7 @@
 
 <div class="overview-container">
 	<!-- Header Section -->
-	<header class="overview-header card">
+	<header class="overview-header">
 		<div class="title-area">
 			<h1>Executive Overview</h1>
 			<p class="subtitle">Multi-channel restaurant performance summary</p>
@@ -129,46 +133,66 @@
 		</div>
 	{/if}
 
-
-
 	<!-- Main Content Area -->
 	<div class="tab-content">
-		<!-- Row 1: Top KPI Cards -->
-		<div class="kpi-row-1">
+		<!-- Uniform 4-column KPI Grid -->
+		<div class="kpis-grid">
+			<KPICard
+				title="Gross Revenue"
+				value={formatCurrency(kpis.grossRevenue, '₹')}
+				subtitle={`${kpis.revenueRetainedPct.toFixed(1)}% Retained`}
+				subtitleColor="var(--success)"
+				accentColor="#6366f1"
+				icon={IndianRupee}
+			/>
 			<KPICard
 				title="Net Payout (Bank Credit)"
 				value={formatCurrency(kpis.netPayout, '₹')}
-				subtitle={`${kpis.revenueRetainedPct.toFixed(1)}% Revenue Retained`}
+				subtitle="After platform fees"
+				accentColor="#10b981"
+				icon={Banknote}
 			/>
 			<KPICard
 				title="Total Volume"
 				value={kpis.totalVolume.toLocaleString('en-IN')}
 				subtitle={`${kpis.successRatePct.toFixed(1)}% Success Rate`}
+				subtitleColor="var(--warning)"
+				accentColor="#f59e0b"
+				icon={ShoppingCart}
+			/>
+			<KPICard
+				title="Avg. Ticket Size (AOV)"
+				value={formatCurrency(kpis.averageTicketSize, '₹')}
+				subtitle="Per successful order"
+				accentColor="#8b5cf6"
+				icon={Ticket}
 			/>
 		</div>
 
-		<!-- Row 2: Channel-Specific KPI Cards -->
-		<div class="kpi-row-2">
-			{#each channels.filter(c => {
-				const selected = page.url.searchParams.get('channel');
-				return !selected || selected === 'all' || selected === c.id;
-			}) as channel}
-				{@const stats = kpis.channelStats[channel.name.toLowerCase()] || {
-					grossSales: 0,
-					orderCount: 0,
-					aov: 0
-				}}
-				<KPICard
-					title={channel.name}
-					accentColor={channel.color}
-					metrics={[
-						{ label: 'Gross Sales', value: formatCurrency(stats.grossSales, '₹', true) },
-						{ label: 'Orders', value: stats.orderCount.toLocaleString('en-IN') },
-						{ label: 'Ticket AOV', value: formatCurrency(stats.aov, '₹') }
-					]}
-				/>
-			{/each}
-		</div>
+		<!-- Channel-Specific KPI Cards (below the main 4) -->
+		{#if channels.length > 0}
+			<div class="channel-kpis">
+				{#each channels.filter(c => {
+					const selected = page.url.searchParams.get('channel');
+					return !selected || selected === 'all' || selected === c.id;
+				}) as channel}
+					{@const stats = kpis.channelStats[channel.name.toLowerCase()] || {
+						grossSales: 0,
+						orderCount: 0,
+						aov: 0
+					}}
+					<KPICard
+						title={channel.name}
+						accentColor={channel.color}
+						metrics={[
+							{ label: 'Gross Sales', value: formatCurrency(stats.grossSales, '₹', true) },
+							{ label: 'Orders', value: stats.orderCount.toLocaleString('en-IN') },
+							{ label: 'Ticket AOV', value: formatCurrency(stats.aov, '₹') }
+						]}
+					/>
+				{/each}
+			</div>
+		{/if}
 
 		<!-- Row 3: Revenue Trends & Channel Mix Charts -->
 		<div class="charts-row">
@@ -232,9 +256,8 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 1.5rem 2rem;
 		flex-wrap: wrap;
-		gap: 1.5rem;
+		gap: 1rem;
 	}
 
 	.title-area h1 {
@@ -254,45 +277,6 @@
 		align-items: center;
 		gap: 1rem;
 		flex-wrap: wrap;
-	}
-
-	.date-picker-form {
-		/* Styles moved to DateRangeHeader.svelte component */
-	}
-
-	.btn {
-		padding: 0.5rem 1rem;
-		border-radius: var(--border-radius);
-		font-size: 0.875rem;
-		font-weight: 600;
-		font-family: inherit;
-		cursor: pointer;
-		border: none;
-		transition: all 0.2s ease;
-	}
-
-	.btn-primary {
-		background: var(--accent-primary);
-		color: white;
-	}
-
-	.btn-primary:hover:not(:disabled) {
-		filter: brightness(1.1);
-	}
-
-	.btn-primary:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-
-	.btn-secondary {
-		background: var(--bg-secondary);
-		color: var(--text-primary);
-		border: 1px solid var(--border-color);
-	}
-
-	.btn-secondary:hover {
-		background: var(--border-color);
 	}
 
 	.sync-banner {
@@ -381,36 +365,29 @@
 		}
 	}
 
-	.theme-tabs {
-		display: flex;
-		gap: 0.5rem;
-		padding: 0.5rem 1rem;
-		overflow-x: auto;
+	/* ── KPI Grids ── */
+	.kpis-grid {
+		display: grid;
+		grid-template-columns: repeat(1, 1fr);
+		gap: 1.5rem;
 	}
 
-	.tab-btn {
-		background: transparent;
-		border: none;
-		padding: 0.6rem 1.25rem;
-		border-radius: var(--border-radius);
-		color: var(--text-secondary);
-		font-size: 0.875rem;
-		font-weight: 500;
-		font-family: inherit;
-		cursor: pointer;
-		white-space: nowrap;
-		transition: all 0.2s ease;
+	@media (min-width: 768px) {
+		.kpis-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
 	}
 
-	.tab-btn:hover {
-		color: var(--text-primary);
-		background: var(--bg-secondary);
+	@media (min-width: 1280px) {
+		.kpis-grid {
+			grid-template-columns: repeat(4, 1fr);
+		}
 	}
 
-	.tab-btn.active {
-		background: var(--accent-primary);
-		color: white;
-		font-weight: 600;
+	.channel-kpis {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		gap: 1.5rem;
 	}
 
 	.tab-content {
@@ -419,21 +396,10 @@
 		gap: 1.5rem;
 	}
 
-	.kpi-row-1 {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-		gap: 1.5rem;
-	}
-
-	.kpi-row-2 {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-		gap: 1.5rem;
-	}
-
+	/* ── Chart Rows ── */
 	.charts-row {
 		display: grid;
-		grid-template-columns: 2fr 1fr;
+		grid-template-columns: 2.1fr 1fr;
 		gap: 1.5rem;
 	}
 
@@ -447,22 +413,5 @@
 		.charts-row {
 			grid-template-columns: 1fr;
 		}
-	}
-
-	.empty-state {
-		padding: 4rem 2rem;
-		text-align: center;
-	}
-
-	.empty-state h3 {
-		font-size: 1.25rem;
-		font-weight: 600;
-		color: var(--text-primary);
-		margin-bottom: 0.5rem;
-	}
-
-	.text-muted {
-		color: var(--text-secondary);
-		font-size: 0.875rem;
 	}
 </style>

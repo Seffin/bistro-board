@@ -54,6 +54,7 @@
 		"esbuild": "^0.25.0"
 	},
 	"dependencies": {
+		"@lucide/svelte": "^1.22.0",
 		"apexcharts": "^5.15.2",
 		"bcryptjs": "^3.0.3",
 		"node-cache": "^5.1.2",
