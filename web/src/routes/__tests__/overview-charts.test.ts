@@ -44,7 +44,10 @@ vi.mock('$lib/server/config', () => ({
 vi.mock('$lib/server/db', () => ({
 	db: {
 		select: vi.fn().mockReturnValue({
-			from: vi.fn().mockImplementation(() => Promise.resolve(mockOrders))
+			from: vi.fn().mockReturnValue({
+				where: vi.fn().mockImplementation(() => Promise.resolve(mockOrders)),
+				then: vi.fn().mockImplementation((res, rej) => Promise.resolve(mockOrders).then(res, rej))
+			})
 		})
 	}
 }));

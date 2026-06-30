@@ -38,11 +38,16 @@ vi.mock('$lib/server/db', () => ({
 	db: {
 		select: vi.fn().mockReturnValue({
 			from: vi.fn().mockImplementation((table: any) => {
-				// Drizzle table objects or names
-				if (table && table[Symbol.for('drizzle:Name')] === 'expenses') {
-					return Promise.resolve(mockExpenses);
-				}
-				return Promise.resolve(mockOrders);
+				const getResult = () => {
+					if (table && table[Symbol.for('drizzle:Name')] === 'expenses') {
+						return Promise.resolve(mockExpenses);
+					}
+					return Promise.resolve(mockOrders);
+				};
+				return {
+					where: vi.fn().mockImplementation(() => getResult()),
+					then: vi.fn().mockImplementation((res, rej) => getResult().then(res, rej))
+				};
 			})
 		})
 	}
