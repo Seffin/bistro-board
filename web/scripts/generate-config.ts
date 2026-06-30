@@ -1,4 +1,6 @@
-import { db } from '../src/lib/server/db/index.js';
+import { drizzle } from 'drizzle-orm/neon-http';
+import { neon } from '@neondatabase/serverless';
+import { config } from 'dotenv';
 import { channels, app_settings } from '../src/lib/server/db/schema.js';
 import { eq, inArray } from 'drizzle-orm';
 import fs from 'fs';
@@ -9,6 +11,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '../../');
 const configPath = path.join(projectRoot, 'settings.json');
+
+config({ path: path.resolve(__dirname, '../.env') });
+
+const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/dummy';
+const client = neon(connectionString);
+const db = drizzle(client);
 
 async function generateConfig() {
 	try {
