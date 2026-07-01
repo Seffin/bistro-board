@@ -102,6 +102,9 @@
 		color: var(--text-primary);
 		line-height: 1.2;
 		margin-bottom: 0.25rem;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.kpi-subtitle {

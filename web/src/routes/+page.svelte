@@ -15,7 +15,10 @@
 		IndianRupee,
 		Banknote,
 		ShoppingCart,
-		Ticket
+		Ticket,
+		Wallet,
+		PiggyBank,
+		TrendingUp
 	} from '@lucide/svelte';
 
 	let { data } = $props();
@@ -130,7 +133,33 @@
 
 	<!-- Main Content Area -->
 	<div class="tab-content">
-		<!-- Uniform 4-column KPI Grid -->
+		<!-- Primary KPIs: Total Income, Total Expense, Net Profit -->
+		<div class="kpis-primary-grid">
+			<KPICard
+				title="Total Income"
+				value={formatCurrency(kpis.totalIncome, '₹')}
+				subtitle="From income register"
+				accentColor="#10b981"
+				icon={TrendingUp}
+			/>
+			<KPICard
+				title="Total Expense"
+				value={formatCurrency(kpis.totalExpense, '₹')}
+				subtitle="Operating costs"
+				accentColor="#ef4444"
+				icon={Wallet}
+			/>
+			<KPICard
+				title="Net Profit"
+				value={formatCurrency(kpis.netProfit, '₹')}
+				subtitle={kpis.totalIncome > 0 ? `${((kpis.netProfit / kpis.totalIncome) * 100).toFixed(1)}% margin` : 'No income data'}
+				subtitleColor={kpis.netProfit >= 0 ? 'var(--success)' : '#ef4444'}
+				accentColor="#8b5cf6"
+				icon={PiggyBank}
+			/>
+		</div>
+
+		<!-- Secondary KPIs: Gross Revenue, Net Payout, Total Volume, AOV -->
 		<div class="kpis-grid">
 			<KPICard
 				title="Gross Revenue"
@@ -144,7 +173,7 @@
 				title="Net Payout (Bank Credit)"
 				value={formatCurrency(kpis.netPayout, '₹')}
 				subtitle="After platform fees"
-				accentColor="#10b981"
+				accentColor="#0ea5e9"
 				icon={Banknote}
 			/>
 			<KPICard
@@ -159,7 +188,7 @@
 				title="Avg. Ticket Size (AOV)"
 				value={formatCurrency(kpis.averageTicketSize, '₹')}
 				subtitle="Per successful order"
-				accentColor="#8b5cf6"
+				accentColor="#f97316"
 				icon={Ticket}
 			/>
 		</div>
@@ -366,6 +395,18 @@
 	}
 
 	/* ── KPI Grids ── */
+	.kpis-primary-grid {
+		display: grid;
+		grid-template-columns: repeat(1, 1fr);
+		gap: 1.5rem;
+	}
+
+	@media (min-width: 768px) {
+		.kpis-primary-grid {
+			grid-template-columns: repeat(3, 1fr);
+		}
+	}
+
 	.kpis-grid {
 		display: grid;
 		grid-template-columns: repeat(1, 1fr);

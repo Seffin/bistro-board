@@ -1,7 +1,7 @@
 import { db } from '$lib/server/db';
-import { orders, expenses } from '$lib/server/db/schema';
+import { orders, expenses, income_register } from '$lib/server/db/schema';
 import { getAllChannels } from '$lib/server/config';
-import { between, and, eq, ilike } from 'drizzle-orm';
+import { between, and, eq, ilike, gte, lte } from 'drizzle-orm';
 import { getCached } from '$lib/server/cache';
 import { parseDateRange } from '$lib/utils/date-filter';
 
@@ -69,6 +69,7 @@ export async function load({ url }: { url?: URL } = {}) {
 		let totalNet = 0;
 		let totalOrders = 0;
 		let successfulOrders = 0;
+		let totalExpense = 0;
 
 		// Order status tracking
 		const statusCounts: Record<string, number> = {};
@@ -175,6 +176,7 @@ export async function load({ url }: { url?: URL } = {}) {
 
 		for (const exp of allExpenses) {
 			const amount = exp.amount || 0;
+			totalExpense += amount;
 			let monthKey = '';
 			if (exp.date) {
 				const match = exp.date.match(/^(\d{4}-\d{2})/);
@@ -201,6 +203,36 @@ export async function load({ url }: { url?: URL } = {}) {
 			const cat = exp.category || 'Uncategorized';
 			expenseCategories[cat] = (expenseCategories[cat] || 0) + amount;
 		}
+
+		// Calculate Net Profit using the Business Ledger exact formula & data source
+		const incomeRecords = await db
+			.select()
+			.from(income_register)
+			.where(
+				start && end
+					? and(gte(income_register.date, start), lte(income_register.date, end))
+					: undefined
+			);
+
+		let ledgerTotalIncome = 0;
+		for (const record of incomeRecords) {
+			const counter = record.petpooja_net || 0;
+			const swiggy = record.swiggy_payout || 0;
+			const zomato = record.zomato_payout || 0;
+			const total = record.total_income || 0;
+
+			if (selectedChannelName) {
+				const nameLower = selectedChannelName.toLowerCase();
+				if (nameLower === 'counter' || nameLower === 'petpooja') ledgerTotalIncome += counter;
+				else if (nameLower === 'swiggy') ledgerTotalIncome += swiggy;
+				else if (nameLower === 'zomato') ledgerTotalIncome += zomato;
+				else ledgerTotalIncome += total; // fallback if channel unknown
+			} else {
+				ledgerTotalIncome += total;
+			}
+		}
+
+		const netProfit = ledgerTotalIncome - totalExpense;
 
 		// Calculate AOV
 		for (const key in channelStats) {
@@ -314,8 +346,11 @@ export async function load({ url }: { url?: URL } = {}) {
 
 		return {
 			kpis: {
+				totalIncome: ledgerTotalIncome,
 				grossRevenue: totalGross,
 				netPayout: totalNet,
+				totalExpense,
+				netProfit,
 				revenueRetainedPct,
 				totalVolume: successfulOrders,
 				successRatePct,

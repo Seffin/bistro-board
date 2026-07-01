@@ -55,9 +55,9 @@
 	<ChannelFilter />
 	<form class="date-picker-form" onsubmit={applyDateRange}>
 		<div class="date-inputs">
-			<input type="date" bind:value={startDate} class="simple-input" aria-label="Start Date" />
+			<input type="date" min="2025-01-01" max="2026-06-20" bind:value={startDate} class="simple-input" aria-label="Start Date" />
 			<span class="separator">to</span>
-			<input type="date" bind:value={endDate} class="simple-input" aria-label="End Date" />
+			<input type="date" min="2025-01-01" max="2026-06-20" bind:value={endDate} class="simple-input" aria-label="End Date" />
 		</div>
 		<div class="date-actions">
 			<button type="submit" class="btn btn-secondary btn-sm" aria-label="Apply date filter"
