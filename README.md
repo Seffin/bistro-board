@@ -64,8 +64,8 @@ npm run db:push
 
 ## 📊 Features
 
-- **Executive Dashboard**: KPIs, revenue trends, channel mix, P&L, expenses, hourly velocity, weekly performance
-- **Detailed Analytics**: Platform Economics, Counter Insights, Order Journal, Business Ledger, Reconciliation, Payout Analytics, Promo Impact
+- **Executive Dashboard**: KPIs, revenue trends, channel mix, P&L, expenses, hourly velocity, weekly performance, monthly summary with click-through drill-downs
+- **Detailed Analytics**: Platform Economics, Channel Insights (Multi-Channel), Order Journal, Business Ledger, Reconciliation, Payout Analytics, Promo Impact (Before/After analysis)
 - **Settings UI**: Channel CRUD, manual file upload, credential management
 - **Authentication**: Session-based login with bcrypt password hashing
 - **Caching**: In-memory TTL cache for expensive dashboard queries
