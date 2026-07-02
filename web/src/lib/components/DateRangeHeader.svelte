@@ -6,9 +6,10 @@
 
 	interface Props {
 		onFilterApply?: (start: string, end: string) => void;
+		showChannelFilter?: boolean;
 	}
 
-	let { onFilterApply }: Props = $props();
+	let { onFilterApply, showChannelFilter = true }: Props = $props();
 
 	// Initialize from URL params or fallback to default range
 	const defaultRange = getDefaultDateRange();
@@ -52,7 +53,9 @@
 </script>
 
 <div class="filters-container">
-	<ChannelFilter />
+	{#if showChannelFilter}
+		<ChannelFilter />
+	{/if}
 	<form class="date-picker-form" onsubmit={applyDateRange}>
 		<div class="date-inputs">
 			<input type="date" min="2025-01-01" max="2026-06-20" bind:value={startDate} class="simple-input" aria-label="Start Date" />

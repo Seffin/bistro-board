@@ -254,7 +254,7 @@
 			<h1>Channel Insights</h1>
 			<p>Multi-channel performance analysis and comparison</p>
 		</div>
-		<DateRangeHeader />
+		<DateRangeHeader showChannelFilter={false} />
 	</header>
 
 	<!-- Multi-Channel Selector -->

@@ -26,9 +26,10 @@
 	$effect(() => {
 		if (!chartNode) return;
 		
+		const currentTheme = themeState.current;
 		import('apexcharts').then((module) => {
 			const ApexCharts = module.default;
-			const baseOptions = getCommonChartOptions(themeState.current);
+			const baseOptions = getCommonChartOptions(currentTheme);
 			const options = {
 				...baseOptions,
 				chart: {
@@ -43,7 +44,7 @@
 					position: 'bottom',
 					horizontalAlign: 'center',
 					labels: {
-						colors: themeState.current === 'dark' ? '#e5e7eb' : '#374151'
+						colors: currentTheme === 'dark' ? '#e5e7eb' : '#374151'
 					}
 				},
 				plotOptions: {
@@ -52,14 +53,14 @@
 							size: '75%',
 							labels: {
 								show: true,
-								name: { color: themeState.current === 'dark' ? '#94a3b8' : '#64748b' },
-								value: { color: themeState.current === 'dark' ? '#f8fafc' : '#0f172a' }
+								name: { color: currentTheme === 'dark' ? '#94a3b8' : '#64748b' },
+								value: { color: currentTheme === 'dark' ? '#f8fafc' : '#0f172a' }
 							}
 						}
 					}
 				},
 				stroke: {
-					colors: [themeState.current === 'dark' ? '#1e293b' : '#ffffff']
+					colors: [currentTheme === 'dark' ? '#1e293b' : '#ffffff']
 				},
 				tooltip: {
 					y: { formatter: (val: number) => `₹${val} L` }

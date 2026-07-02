@@ -34,6 +34,8 @@
 	$effect(() => {
 		if (!chartNode || !hasValidData) return;
 		
+		const currentTheme = themeState.current;
+
 		import('apexcharts').then((module) => {
 			const ApexCharts = module.default;
 
@@ -41,7 +43,7 @@
 			const total = aggregatedSeries.reduce((a, b) => a + b, 0) || 1;
 			const normalizedSeries = aggregatedSeries.map(v => Number(((v / total) * 100).toFixed(1)));
 
-			const baseOptions = getCommonChartOptions(themeState.current);
+			const baseOptions = getCommonChartOptions(currentTheme);
 			const options = {
 				...baseOptions,
 				chart: {
@@ -56,16 +58,16 @@
 					radialBar: {
 						hollow: { size: '40%' },
 						track: {
-							background: themeState.current === 'dark' ? '#334155' : '#f1f5f9'
+							background: currentTheme === 'dark' ? '#334155' : '#e2e8f0'
 						},
 						dataLabels: {
 							name: { 
 								fontSize: '14px',
-								color: themeState.current === 'dark' ? '#94a3b8' : '#64748b'
+								color: currentTheme === 'dark' ? '#94a3b8' : '#64748b'
 							},
 							value: {
 								fontSize: '16px',
-								color: themeState.current === 'dark' ? '#f8fafc' : '#0f172a',
+								color: currentTheme === 'dark' ? '#f8fafc' : '#0f172a',
 								formatter: (val: number, opts: any) => {
 									let idx = opts?.seriesIndex;
 									if (idx === undefined || idx === null) {
@@ -88,7 +90,7 @@
 							total: {
 								show: true,
 								label: 'Total',
-								color: themeState.current === 'dark' ? '#94a3b8' : '#64748b',
+								color: currentTheme === 'dark' ? '#94a3b8' : '#64748b',
 								formatter: () => {
 									const sum = aggregatedSeries.reduce((a, b) => a + b, 0);
 									return `₹${sum.toFixed(2)} L`;

@@ -21,9 +21,10 @@
 	$effect(() => {
 		if (!chartNode) return;
 		
+		const currentTheme = themeState.current;
 		import('apexcharts').then((module) => {
 			const ApexCharts = module.default;
-			const baseOptions = getCommonChartOptions(themeState.current);
+			const baseOptions = getCommonChartOptions(currentTheme);
 			const options = {
 				...baseOptions,
 				chart: {
@@ -35,13 +36,13 @@
 				xaxis: {
 					categories: labels,
 					labels: {
-						style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' },
+						style: { colors: currentTheme === 'dark' ? '#94a3b8' : '#64748b' },
 						formatter: (val: number) => `₹${val} L`
 					}
 				},
 				yaxis: {
 					labels: {
-						style: { colors: themeState.current === 'dark' ? '#94a3b8' : '#64748b' }
+						style: { colors: currentTheme === 'dark' ? '#94a3b8' : '#64748b' }
 					}
 				},
 				plotOptions: {

@@ -24,9 +24,10 @@
 	$effect(() => {
 		if (!chartNode || !hasData) return;
 
+		const currentTheme = themeState.current;
 		import('apexcharts').then((module) => {
 			const ApexCharts = module.default;
-			const baseOptions = getCommonChartOptions(themeState.current);
+			const baseOptions = getCommonChartOptions(currentTheme);
 		const options = {
 			...baseOptions,
 			chart: {
@@ -45,17 +46,17 @@
 							show: true,
 							name: {
 								show: true,
-								color: themeState.current === 'dark' ? '#94a3b8' : '#64748b'
+								color: currentTheme === 'dark' ? '#94a3b8' : '#64748b'
 							},
 							value: {
 								show: true,
-								color: themeState.current === 'dark' ? '#f8fafc' : '#0f172a',
+								color: currentTheme === 'dark' ? '#f8fafc' : '#0f172a',
 								formatter: (val: string) => parseInt(val).toLocaleString('en-IN')
 							},
 							total: {
 								show: true,
 								label: 'Total',
-								color: themeState.current === 'dark' ? '#94a3b8' : '#64748b',
+								color: currentTheme === 'dark' ? '#94a3b8' : '#64748b',
 								formatter: (w: any) => {
 									const total = w.globals.seriesTotals.reduce((a: number, b: number) => a + b, 0);
 									return total.toLocaleString('en-IN');
@@ -77,12 +78,12 @@
 			legend: {
 				position: 'bottom',
 				labels: {
-					colors: themeState.current === 'dark' ? '#e5e7eb' : '#374151'
+					colors: currentTheme === 'dark' ? '#e5e7eb' : '#374151'
 				}
 			},
 			stroke: {
 				width: 2,
-				colors: [themeState.current === 'dark' ? '#1e293b' : '#ffffff']
+				colors: [currentTheme === 'dark' ? '#1e293b' : '#ffffff']
 			}
 		};
 
