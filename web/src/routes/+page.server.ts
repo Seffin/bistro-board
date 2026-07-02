@@ -83,6 +83,10 @@ export async function load({ url }: { url?: URL } = {}) {
 
 		// Monthly accumulation map for charts: YYYY-MM -> { channelKey: amount, total: amount, expenses: amount }
 		const monthlyGroups: Record<string, Record<string, number>> = {};
+		// Track per-month order counts and per-channel revenue for drill-down
+		const monthlyOrderCounts: Record<string, number> = {};
+		const monthlyChannelRevenue: Record<string, Record<string, number>> = {};
+		const monthlyExpenseCategories: Record<string, Record<string, number>> = {};
 
 		// Hourly velocity map (11:00 to 22:00)
 		const hourlyVolume: Record<string, number> = {
@@ -167,6 +171,11 @@ export async function load({ url }: { url?: URL } = {}) {
 					}
 					monthlyGroups[monthKey][cKey] = (monthlyGroups[monthKey][cKey] || 0) + gross;
 					monthlyGroups[monthKey]['total'] += gross;
+
+					// Per-month order counts and channel revenue for drill-down
+					monthlyOrderCounts[monthKey] = (monthlyOrderCounts[monthKey] || 0) + 1;
+					if (!monthlyChannelRevenue[monthKey]) monthlyChannelRevenue[monthKey] = {};
+					monthlyChannelRevenue[monthKey][cKey] = (monthlyChannelRevenue[monthKey][cKey] || 0) + gross;
 				}
 			}
 		}
@@ -202,6 +211,10 @@ export async function load({ url }: { url?: URL } = {}) {
 
 			const cat = exp.category || 'Uncategorized';
 			expenseCategories[cat] = (expenseCategories[cat] || 0) + amount;
+
+			// Per-month expense category for drill-down
+			if (!monthlyExpenseCategories[monthKey]) monthlyExpenseCategories[monthKey] = {};
+			monthlyExpenseCategories[monthKey][cat] = (monthlyExpenseCategories[monthKey][cat] || 0) + amount;
 		}
 
 		// Calculate Net Profit using the Business Ledger exact formula & data source
@@ -401,7 +414,47 @@ export async function load({ url }: { url?: URL } = {}) {
 					series: statusSeries,
 					colors: statusColors
 				}
-			}
+			},
+			// Monthly summary table data
+			monthlySummary: sortedMonths.map((m) => {
+				const [y, mo] = m.split('-');
+				return {
+					monthKey: m,
+					label: `${monthNames[parseInt(mo, 10) - 1]} ${y}`,
+					revenue: Number(((monthlyGroups[m]['total'] || 0) / 100000).toFixed(2)),
+					expenses: Number(((monthlyGroups[m].expenses || 0) / 100000).toFixed(2)),
+					profit: Number((((monthlyGroups[m]['total'] || 0) - (monthlyGroups[m].expenses || 0)) / 100000).toFixed(2)),
+					orders: monthlyOrderCounts[m] || 0
+				};
+			}),
+			// Per-month drill-down details
+			monthlyDetails: Object.fromEntries(
+				sortedMonths.map((m) => {
+					const [y, mo] = m.split('-');
+					return [
+						m,
+						{
+							label: `${monthNames[parseInt(mo, 10) - 1]} ${y}`,
+							revenueTotal: Number(((monthlyGroups[m]['total'] || 0) / 100000).toFixed(2)),
+							expenseTotal: Number(((monthlyGroups[m].expenses || 0) / 100000).toFixed(2)),
+							profit: Number((((monthlyGroups[m]['total'] || 0) - (monthlyGroups[m].expenses || 0)) / 100000).toFixed(2)),
+							orders: monthlyOrderCounts[m] || 0,
+							channels: Object.fromEntries(
+								activeChannels.map((c) => [
+									c.name,
+									Number(((monthlyChannelRevenue[m]?.[c.name.toLowerCase()] || 0) / 100000).toFixed(2))
+								])
+							),
+							expenseCategories: Object.fromEntries(
+								Object.entries(monthlyExpenseCategories[m] || {}).map(([cat, amt]) => [
+									cat,
+									Number((amt / 100000).toFixed(2))
+								])
+							)
+						}
+					];
+				})
+			)
 		};
 	}); // end getCached
 }

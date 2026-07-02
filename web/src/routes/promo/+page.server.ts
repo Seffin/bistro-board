@@ -20,9 +20,27 @@ export interface ChannelPromo {
 	total_discount: number;
 }
 
+export interface MonthlyPromoTrend {
+	month: string;
+	promo_orders: number;
+	non_promo_orders: number;
+	promo_aov: number;
+	non_promo_aov: number;
+	promo_revenue: number;
+	non_promo_revenue: number;
+}
+
 export interface PromoData {
 	discount_buckets: DiscountBucket[];
 	channel_breakdown: ChannelPromo[];
+	monthly_promo_trend: MonthlyPromoTrend[];
+	promo_vs_non_promo: {
+		promo_aov: number;
+		non_promo_aov: number;
+		aov_lift_pct: number;
+		promo_avg_revenue: number;
+		non_promo_avg_revenue: number;
+	};
 	summary: {
 		total_orders: number;
 		total_orders_with_promo: number;
@@ -53,15 +71,19 @@ export const load = async ({ url }: { url: URL }): Promise<{ promo: PromoData }>
 	const allOrders = await db
 		.select({
 			grand_total: orders.grand_total,
-			discount: orders.discount, // Fix: Use 'discount' instead of 'other_charges'
-			channel: orders.channel
+			discount: orders.discount,
+			channel: orders.channel,
+			order_date: orders.order_date
 		})
 		.from(orders)
 		.where(and(...conditions));
 
 	const totalOrders = allOrders.length;
 	let ordersWithPromo = 0;
+	let ordersWithoutPromo = 0;
 	let totalDiscountValue = 0;
+	let totalPromoRevenue = 0;
+	let totalNonPromoRevenue = 0;
 
 	// Bins for discount ranges
 	const bins = [
@@ -72,39 +94,52 @@ export const load = async ({ url }: { url: URL }): Promise<{ promo: PromoData }>
 		{ min: 501, max: 999999, label: '₹500+', count: 0, amount: 0, discount_value: 0 }
 	];
 
-	// Channel breakdown
+	// Maps
 	const channelMap: Record<string, { total: number; promo: number; discount: number }> = {};
+	const monthlyMap: Record<string, { p_orders: number; np_orders: number; p_rev: number; np_rev: number }> = {};
 
 	for (const order of allOrders) {
 		const discount = order.discount || 0;
 		const channel = (order.channel || 'unknown').toLowerCase();
-
-		if (!channelMap[channel]) {
-			channelMap[channel] = { total: 0, promo: 0, discount: 0 };
+		const amount = order.grand_total || 0;
+		
+		let monthKey = 'Unknown';
+		if (order.order_date) {
+			const d = new Date(order.order_date);
+			monthKey = d.toISOString().substring(0, 7); // YYYY-MM
 		}
+
+		if (!channelMap[channel]) channelMap[channel] = { total: 0, promo: 0, discount: 0 };
+		if (!monthlyMap[monthKey]) monthlyMap[monthKey] = { p_orders: 0, np_orders: 0, p_rev: 0, np_rev: 0 };
+
 		channelMap[channel].total++;
 
 		if (discount > 0) {
 			ordersWithPromo++;
 			totalDiscountValue += discount;
+			totalPromoRevenue += amount;
 			channelMap[channel].promo++;
 			channelMap[channel].discount += discount;
+			
+			monthlyMap[monthKey].p_orders++;
+			monthlyMap[monthKey].p_rev += amount;
 
-			const amount = order.grand_total || 0;
-
-			// Categorize into bins
 			for (const bin of bins) {
 				if (discount >= bin.min && discount <= bin.max) {
 					bin.count++;
 					bin.amount += amount;
 					bin.discount_value += discount;
-					break; // Stop after finding the right bin
+					break;
 				}
 			}
+		} else {
+			ordersWithoutPromo++;
+			totalNonPromoRevenue += amount;
+			monthlyMap[monthKey].np_orders++;
+			monthlyMap[monthKey].np_rev += amount;
 		}
 	}
 
-	// Format buckets
 	const discountBuckets: DiscountBucket[] = bins
 		.filter((bin) => bin.count > 0)
 		.map((bin) => ({
@@ -116,7 +151,6 @@ export const load = async ({ url }: { url: URL }): Promise<{ promo: PromoData }>
 			penetration_rate: totalOrders > 0 ? (bin.count / totalOrders) * 100 : 0
 		}));
 
-	// Format channel breakdown
 	const channelBreakdown: ChannelPromo[] = Object.entries(channelMap)
 		.filter(([_, data]) => data.total > 0)
 		.map(([channel, data]) => ({
@@ -128,13 +162,37 @@ export const load = async ({ url }: { url: URL }): Promise<{ promo: PromoData }>
 		}))
 		.sort((a, b) => b.total_discount - a.total_discount);
 
+	const monthlyPromoTrend: MonthlyPromoTrend[] = Object.entries(monthlyMap)
+		.map(([month, data]) => ({
+			month,
+			promo_orders: data.p_orders,
+			non_promo_orders: data.np_orders,
+			promo_aov: data.p_orders > 0 ? data.p_rev / data.p_orders : 0,
+			non_promo_aov: data.np_orders > 0 ? data.np_rev / data.np_orders : 0,
+			promo_revenue: data.p_rev,
+			non_promo_revenue: data.np_rev
+		}))
+		.sort((a, b) => a.month.localeCompare(b.month));
+
 	const overallPenetration = totalOrders > 0 ? (ordersWithPromo / totalOrders) * 100 : 0;
 	const overallAvgDiscount = ordersWithPromo > 0 ? totalDiscountValue / ordersWithPromo : 0;
+	
+	const promoAov = ordersWithPromo > 0 ? totalPromoRevenue / ordersWithPromo : 0;
+	const nonPromoAov = ordersWithoutPromo > 0 ? totalNonPromoRevenue / ordersWithoutPromo : 0;
+	const aovLiftPct = nonPromoAov > 0 ? ((promoAov - nonPromoAov) / nonPromoAov) * 100 : 0;
 
 	return {
 		promo: {
 			discount_buckets: discountBuckets,
 			channel_breakdown: channelBreakdown,
+			monthly_promo_trend: monthlyPromoTrend,
+			promo_vs_non_promo: {
+				promo_aov: promoAov,
+				non_promo_aov: nonPromoAov,
+				aov_lift_pct: aovLiftPct,
+				promo_avg_revenue: totalPromoRevenue,
+				non_promo_avg_revenue: totalNonPromoRevenue
+			},
 			summary: {
 				total_orders: totalOrders,
 				total_orders_with_promo: ordersWithPromo,

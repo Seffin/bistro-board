@@ -6,6 +6,7 @@
 	import type ApexCharts from 'apexcharts';
 	import type { ApexOptions } from 'apexcharts';
 	import { onMount } from 'svelte';
+	import { TrendingUp, TrendingDown } from '@lucide/svelte';
 
 	let { data } = $props();
 	const promo = $derived(data.promo);
@@ -21,14 +22,20 @@
 
 	let distributionChartContainer: HTMLDivElement | undefined = $state();
 	let penetrationChartContainer: HTMLDivElement | undefined = $state();
+	let aovComparisonChartContainer: HTMLDivElement | undefined = $state();
+	let monthlyTrendChartContainer: HTMLDivElement | undefined = $state();
 	
 	let distributionChart: ApexCharts | undefined;
 	let penetrationChart: ApexCharts | undefined;
+	let aovComparisonChart: ApexCharts | undefined;
+	let monthlyTrendChart: ApexCharts | undefined;
 
 	onMount(() => {
 		return () => {
 			distributionChart?.destroy();
 			penetrationChart?.destroy();
+			aovComparisonChart?.destroy();
+			monthlyTrendChart?.destroy();
 		};
 	});
 
@@ -39,35 +46,35 @@
 		import('apexcharts').then((module) => {
 			const ApexCharts = module.default;
 			const base = getCommonChartOptions(themeState.current);
-		const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
+			const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
 		
-		const options: ApexOptions = {
-			...base,
-			chart: { ...base.chart, type: 'bar', height: 350 },
-			series: [
-				{
-					name: 'Orders',
-					data: promo.discount_buckets.map(b => b.order_count)
-				}
-			],
-			xaxis: {
-				categories: promo.discount_buckets.map(b => b.bucket_range),
-				labels: { style: { colors: labelColor } }
-			},
-			yaxis: {
-				labels: { style: { colors: labelColor } }
-			},
-			colors: ['#8b5cf6'],
-			plotOptions: {
-				bar: { borderRadius: 4, distributed: true }
-			},
-			dataLabels: {
-				enabled: true,
-				formatter: (val: number) => val.toString(),
-				style: { colors: ['#fff'] }
-			},
-			legend: { show: false }
-		};
+			const options: ApexOptions = {
+				...base,
+				chart: { ...base.chart, type: 'bar', height: 350 },
+				series: [
+					{
+						name: 'Orders',
+						data: promo.discount_buckets.map(b => b.order_count)
+					}
+				],
+				xaxis: {
+					categories: promo.discount_buckets.map(b => b.bucket_range),
+					labels: { style: { colors: labelColor } }
+				},
+				yaxis: {
+					labels: { style: { colors: labelColor } }
+				},
+				colors: ['#8b5cf6'],
+				plotOptions: {
+					bar: { borderRadius: 4, distributed: true }
+				},
+				dataLabels: {
+					enabled: true,
+					formatter: (val: number) => val.toString(),
+					style: { colors: ['#fff'] }
+				},
+				legend: { show: false }
+			};
 
 			if (!distributionChart) {
 				distributionChart = new ApexCharts(distributionChartContainer, options);
@@ -86,33 +93,142 @@
 			const ApexCharts = module.default;
 			const base = getCommonChartOptions(themeState.current);
 		
-		const options: ApexOptions = {
-			...base,
-			chart: { ...base.chart, type: 'donut', height: 350 },
-			series: promo.channel_breakdown.map(c => c.total_discount),
-			labels: promo.channel_breakdown.map(c => c.channel),
-			colors: ['#3b82f6', '#f97316', '#e53935', '#10b981', '#6b7280'],
-			dataLabels: {
-				enabled: true,
-				formatter: (val: number) => `${val.toFixed(1)}%`,
-				style: { colors: ['#fff'] },
-				dropShadow: { enabled: false }
-			},
-			legend: {
-				position: 'bottom',
-				labels: { colors: themeState.current === 'dark' ? '#e5e7eb' : '#374151' }
-			},
-			stroke: {
-				width: 2,
-				colors: [themeState.current === 'dark' ? '#1e293b' : '#ffffff']
-			}
-		};
+			const options: ApexOptions = {
+				...base,
+				chart: { ...base.chart, type: 'donut', height: 350 },
+				series: promo.channel_breakdown.map(c => c.total_discount),
+				labels: promo.channel_breakdown.map(c => c.channel),
+				colors: ['#3b82f6', '#f97316', '#e53935', '#10b981', '#6b7280'],
+				dataLabels: {
+					enabled: true,
+					formatter: (val: number) => `${val.toFixed(1)}%`,
+					style: { colors: ['#fff'] },
+					dropShadow: { enabled: false }
+				},
+				legend: {
+					position: 'bottom',
+					labels: { colors: themeState.current === 'dark' ? '#e5e7eb' : '#374151' }
+				},
+				stroke: {
+					width: 2,
+					colors: [themeState.current === 'dark' ? '#1e293b' : '#ffffff']
+				}
+			};
 
 			if (!penetrationChart) {
 				penetrationChart = new ApexCharts(penetrationChartContainer, options);
 				penetrationChart.render();
 			} else {
 				penetrationChart.updateOptions(options);
+			}
+		});
+	});
+
+	// AOV Comparison Chart (Promo vs Non-Promo)
+	$effect(() => {
+		if (!aovComparisonChartContainer || promo.monthly_promo_trend.length === 0) return;
+
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			const base = getCommonChartOptions(themeState.current);
+			const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
+		
+			const options: ApexOptions = {
+				...base,
+				chart: { ...base.chart, type: 'bar', height: 350 },
+				series: [
+					{
+						name: 'Promo AOV',
+						data: promo.monthly_promo_trend.map(m => Math.round(m.promo_aov))
+					},
+					{
+						name: 'Non-Promo AOV',
+						data: promo.monthly_promo_trend.map(m => Math.round(m.non_promo_aov))
+					}
+				],
+				xaxis: {
+					categories: promo.monthly_promo_trend.map(m => {
+						const [y, mo] = m.month.split('-');
+						const d = new Date(parseInt(y), parseInt(mo) - 1);
+						return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+					}),
+					labels: { style: { colors: labelColor } }
+				},
+				yaxis: {
+					labels: { style: { colors: labelColor }, formatter: (val: number) => `₹${val}` }
+				},
+				colors: ['#10b981', '#64748b'], // Green for promo, grey for non-promo
+				plotOptions: {
+					bar: { borderRadius: 4, horizontal: false, columnWidth: '55%' }
+				},
+				dataLabels: { enabled: false },
+				stroke: { show: true, width: 2, colors: ['transparent'] },
+				legend: {
+					position: 'top',
+					labels: { colors: themeState.current === 'dark' ? '#e5e7eb' : '#374151' }
+				}
+			};
+
+			if (!aovComparisonChart) {
+				aovComparisonChart = new ApexCharts(aovComparisonChartContainer, options);
+				aovComparisonChart.render();
+			} else {
+				aovComparisonChart.updateOptions(options);
+			}
+		});
+	});
+
+	// Monthly Volume Trend Chart (Area)
+	$effect(() => {
+		if (!monthlyTrendChartContainer || promo.monthly_promo_trend.length === 0) return;
+
+		import('apexcharts').then((module) => {
+			const ApexCharts = module.default;
+			const base = getCommonChartOptions(themeState.current);
+			const labelColor = themeState.current === 'dark' ? '#94a3b8' : '#64748b';
+		
+			const options: ApexOptions = {
+				...base,
+				chart: { ...base.chart, type: 'area', height: 350, stacked: true },
+				series: [
+					{
+						name: 'Promo Orders',
+						data: promo.monthly_promo_trend.map(m => m.promo_orders)
+					},
+					{
+						name: 'Non-Promo Orders',
+						data: promo.monthly_promo_trend.map(m => m.non_promo_orders)
+					}
+				],
+				xaxis: {
+					categories: promo.monthly_promo_trend.map(m => {
+						const [y, mo] = m.month.split('-');
+						const d = new Date(parseInt(y), parseInt(mo) - 1);
+						return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+					}),
+					labels: { style: { colors: labelColor } }
+				},
+				yaxis: {
+					labels: { style: { colors: labelColor } }
+				},
+				colors: ['#8b5cf6', '#cbd5e1'], // Purple for promo, light grey for non-promo
+				fill: {
+					type: 'gradient',
+					gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.2, stops: [0, 90, 100] }
+				},
+				dataLabels: { enabled: false },
+				stroke: { curve: 'smooth', width: 2 },
+				legend: {
+					position: 'top',
+					labels: { colors: themeState.current === 'dark' ? '#e5e7eb' : '#374151' }
+				}
+			};
+
+			if (!monthlyTrendChart) {
+				monthlyTrendChart = new ApexCharts(monthlyTrendChartContainer, options);
+				monthlyTrendChart.render();
+			} else {
+				monthlyTrendChart.updateOptions(options);
 			}
 		});
 	});
@@ -127,32 +243,56 @@
 	<header class="header card">
 		<div>
 			<h1>Promo Impact</h1>
-			<p>Discount and promotion analysis by value bucket</p>
+			<p>Discount effectiveness and before/after performance analysis</p>
 		</div>
 		<DateRangeHeader />
 	</header>
 
-	<!-- Summary KPI Cards -->
+	<!-- Performance Comparison (Promo vs Non-Promo) -->
 	<div class="kpi-row">
 		<KPICard
-			title="Orders with Promo"
-			value={promo.summary.total_orders_with_promo.toLocaleString('en-IN')}
-			subtitle={`${promo.summary.penetration_rate.toFixed(1)}% of total`}
+			title="Promo AOV vs Non-Promo"
+			value={formatCurrency(promo.promo_vs_non_promo.promo_aov)}
+			subtitle={`Non-Promo AOV: ${formatCurrency(promo.promo_vs_non_promo.non_promo_aov)}`}
+			accentColor={promo.promo_vs_non_promo.aov_lift_pct >= 0 ? '#10b981' : '#ef4444'}
+			icon={promo.promo_vs_non_promo.aov_lift_pct >= 0 ? TrendingUp : TrendingDown}
 		/>
 		<KPICard
-			title="Total Discount Value"
+			title="AOV Lift (Impact)"
+			value={`${promo.promo_vs_non_promo.aov_lift_pct > 0 ? '+' : ''}${promo.promo_vs_non_promo.aov_lift_pct.toFixed(1)}%`}
+			subtitle="Impact of discounts on cart size"
+			accentColor={promo.promo_vs_non_promo.aov_lift_pct >= 0 ? '#10b981' : '#ef4444'}
+		/>
+		<KPICard
+			title="Promo Orders Revenue"
+			value={formatCurrency(promo.promo_vs_non_promo.promo_avg_revenue)}
+			subtitle={`${promo.summary.penetration_rate.toFixed(1)}% penetration`}
+			accentColor="#8b5cf6"
+		/>
+		<KPICard
+			title="Total Discount Given"
 			value={formatCurrency(promo.summary.total_discount_value)}
-			subtitle={`Avg: ${formatCurrency(promo.summary.avg_discount)}`}
-		/>
-		<KPICard
-			title="Total Orders Analyzed"
-			value={promo.summary.total_orders.toLocaleString('en-IN')}
-			subtitle="In period"
+			subtitle={`Across ${promo.summary.total_orders_with_promo.toLocaleString('en-IN')} orders`}
+			accentColor="#f59e0b"
 		/>
 	</div>
 
 	{#if promo.discount_buckets.length > 0}
-		<!-- Charts Row -->
+		<!-- AOV and Volume Trend Charts -->
+		<div class="charts-row">
+			<div class="chart-card card">
+				<h3>Average Order Value (AOV) Impact</h3>
+				<p class="chart-subtitle">Monthly comparison of AOV for Promo vs Non-Promo orders</p>
+				<div bind:this={aovComparisonChartContainer}></div>
+			</div>
+			<div class="chart-card card">
+				<h3>Promo Order Volume Trend</h3>
+				<p class="chart-subtitle">Monthly proportion of discounted vs regular orders</p>
+				<div bind:this={monthlyTrendChartContainer}></div>
+			</div>
+		</div>
+
+		<!-- Existing Distribution & Penetration Charts -->
 		<div class="charts-row">
 			<div class="chart-card card distribution-chart">
 				<h3>Discount Distribution</h3>
@@ -239,50 +379,6 @@
 				</table>
 			</div>
 		</div>
-
-		<!-- Insights -->
-		<div class="card insights-card">
-			<h3>Key Insights</h3>
-			<div class="insights-grid">
-				<div class="insight-item">
-					<h4>Penetration Rate</h4>
-					<p class="value">{promo.summary.penetration_rate.toFixed(1)}%</p>
-					<p class="description">
-						{#if promo.summary.penetration_rate > 50}
-							High promotion usage - strong discount incentive
-						{:else if promo.summary.penetration_rate > 25}
-							Moderate promotion usage - balanced approach
-						{:else}
-							Low promotion usage - price-sensitive customers rare
-						{/if}
-					</p>
-				</div>
-
-				<div class="insight-item">
-					<h4>Average Discount Value</h4>
-					<p class="value">{formatCurrency(promo.summary.avg_discount)}</p>
-					<p class="description">Per discounted order across all buckets</p>
-				</div>
-
-				<div class="insight-item">
-					<h4>Total Impact</h4>
-					<p class="value">{formatCurrency(promo.summary.total_discount_value)}</p>
-					<p class="description">Combined discount value across all orders</p>
-				</div>
-
-				<div class="insight-item">
-					<h4>Top Bucket</h4>
-					<p class="value">
-						{#if promo.discount_buckets.length > 0}
-							{promo.discount_buckets.reduce((max, b) => max.order_count > b.order_count ? max : b).bucket_range}
-						{:else}
-							N/A
-						{/if}
-					</p>
-					<p class="description">Most frequently used discount range</p>
-				</div>
-			</div>
-		</div>
 	{:else}
 		<div class="empty-state card">
 			<h3>No Promo Data Available</h3>
@@ -324,13 +420,13 @@
 
 	.kpi-row {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 		gap: 1.5rem;
 	}
 
 	.charts-row {
 		display: grid;
-		grid-template-columns: 2fr 1fr;
+		grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
 		gap: 1.5rem;
 	}
 
@@ -424,53 +520,6 @@
 		font-size: 1.05rem;
 	}
 
-	.insights-card {
-		padding: 1.5rem 2rem;
-	}
-
-	.insights-card h3 {
-		font-size: 1.1rem;
-		font-weight: 600;
-		color: var(--text-primary);
-		margin-bottom: 1.5rem;
-	}
-
-	.insights-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-		gap: 1rem;
-	}
-
-	.insight-item {
-		padding: 1rem;
-		background: var(--bg-secondary);
-		border-radius: 0.375rem;
-		border: 1px solid var(--border-color);
-	}
-
-	.insight-item h4 {
-		font-size: 0.8rem;
-		font-weight: 600;
-		color: var(--text-secondary);
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		margin-bottom: 0.5rem;
-	}
-
-	.insight-item .value {
-		font-size: 1.5rem;
-		font-weight: 700;
-		color: var(--accent-primary);
-		margin-bottom: 0.5rem;
-	}
-
-	.insight-item .description {
-		font-size: 0.8rem;
-		color: var(--text-secondary);
-		line-height: 1.4;
-		margin: 0;
-	}
-
 	.empty-state {
 		padding: 4rem 2rem;
 		text-align: center;
@@ -504,10 +553,6 @@
 	@media (max-width: 768px) {
 		.header {
 			flex-direction: column;
-		}
-
-		.insights-grid {
-			grid-template-columns: 1fr;
 		}
 
 		.table-container {

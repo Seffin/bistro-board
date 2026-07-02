@@ -96,7 +96,7 @@ Base URL: `http://127.0.0.1:8000`. Global query params `start_date` & `end_date`
 
 ### API Endpoints & Excluded Statuses
 - **Excluded Statuses**: Most analytics exclude `Cancelled, rejected, failed, Not Paid`. Cancellation KPIs specifically include `Cancelled, rejected, failed, Cancelled/ Rejected Orders`.
-- **Analytics Endpoints**: `GET /api/kpis` (totals, AOV, breakdown), `GET /api/sales-trends?groupby=day|week|month`, `GET /api/channel-economics` (gross, fees, payout), `GET /api/counter-insights` (top 15 items, payment breakdown), `GET /api/item-breakup?item_name=...` (item trends, co-purchase), `GET /api/weekday-sales` (Mon–Sat, Sun excluded), `GET /api/hourly-sales`.
+- **Analytics Endpoints**: `GET /api/kpis` (totals, AOV, breakdown), `GET /api/sales-trends?groupby=day|week|month`, `GET /api/channel-economics` (gross, fees, payout), `GET /api/channel-insights` (top 15 items, payment breakdown), `GET /api/item-breakup?item_name=...` (item trends, co-purchase), `GET /api/weekday-sales` (Mon–Sat, Sun excluded), `GET /api/hourly-sales`.
 - **Orders & Payouts Endpoints**: `GET /api/orders?page&limit&channel&status&search` (paginated journal), `GET /api/weekly-payouts?channel`, `GET /api/payout-orders?channel&week_key&page&limit`, `GET /api/promo-analysis?channel` (promo vs non-promo, Pearson correlation).
 - **Ledger & Sync Endpoints**: `GET /api/ledger-summary` (P&L, margin), `GET /api/expenses-breakup`, `GET /api/income-breakup`, `GET /api/ledger-transactions?type=expense|income`, `GET /api/daily-reconciliation`, `POST /api/run-import` (409 if running), `GET /api/sync-status` (`{ running, stage, message, progress_percent, log[], result }`).
 
@@ -111,13 +111,13 @@ payout_variance  = actual_payout - ledger.total_income
 
 ### Legacy Frontend (`dashboard/static/`)
 - `index.html`: Shell, sidebar nav, 8 tab panes, date pickers, sync modal.
-- `app.js` (~3,200 lines): Global state (`activeTab: 'overview'`, `salesTrendGroupby`, `ordersPage`, `startDate`, `endDate`, `ledgerPage`, `ledgerType`, `charts`). Tab activation (`initTabs() → click nav → onTabActivated(tabId) → load*Data() → fetch API → render ApexCharts/tables`). Loaders: `loadOverviewData`, `loadEconomicsData`, `loadCounterInsights`, `loadOrdersTable`, `loadLedgerData`, `loadReconciliationData`, `loadPayoutData`, `loadPromoData`. Sync UX: disable button, show spinner/modal, poll status, update progress bar, reload active tab. Formatting: `Intl.NumberFormat('en-IN', { currency: 'INR' })`, K/L/Cr suffixes.
+- `app.js` (~3,200 lines): Global state (`activeTab: 'overview'`, `salesTrendGroupby`, `ordersPage`, `startDate`, `endDate`, `ledgerPage`, `ledgerType`, `charts`). Tab activation (`initTabs() → click nav → onTabActivated(tabId) → load*Data() → fetch API → render ApexCharts/tables`). Loaders: `loadOverviewData`, `loadEconomicsData`, `loadChannelInsights`, `loadOrdersTable`, `loadLedgerData`, `loadReconciliationData`, `loadPayoutData`, `loadPromoData`. Sync UX: disable button, show spinner/modal, poll status, update progress bar, reload active tab. Formatting: `Intl.NumberFormat('en-IN', { currency: 'INR' })`, K/L/Cr suffixes.
 - `style.css`: Themes (`theme-light`, `theme-dark`, `theme-color`).
 
 ### Legacy Dashboard Tabs Summary
 - `overview` (Executive Overview): KPI cards, trend charts, P&L snapshot, Opex donut, channel mix.
 - `economics` (Platform Economics): Fee breakdown, margin leakage Swiggy vs Zomato.
-- `counter` (Counter Insights): Top items, payment mix, item drill-down modal.
+- `channel` (Channel Insights): Top items, payment mix, channel comparison, multi-channel selection.
 - `orders` (Order Journal): Filterable/searchable paginated table.
 - `ledger` (Business Ledger): P&L, category charts, expense/income tables.
 - `reconciliation`: Compare expected payouts against bank settlements. Matches Counter POS against Ledger text dates.
@@ -314,9 +314,9 @@ The Phase 3 implementation expands the SvelteKit web stack with 8 fully-featured
 
 #### 1. **Home / Overview** (Executive Dashboard)
 - **Route**: `/`
-- **KPIs**: Total Orders, Gross Revenue, Net Payout, Active Channels
+- **KPIs**: Total Income, Total Expense, Net Profit, Gross Revenue, Net Payout, Volume, AOV, Active Channels
 - **Charts**: Monthly Contribution (stacked bar), Revenue Trends (line), Hourly Velocity (heatmap), Channel Mix (pie), Profit/Loss (bar), Weekly Performance (area), Expense Breakdown (pie)
-- **Features**: Interactive date range filter, responsive charts, empty state handling
+- **Features**: Interactive date range filter, responsive charts, Monthly Summary table, Click-through drill-down modal on P&L and Revenue charts, empty state handling
 - **Tests**: 52 passing tests
 
 #### 2. **Sales** (Recent Orders)
@@ -341,11 +341,11 @@ The Phase 3 implementation expands the SvelteKit web stack with 8 fully-featured
 - **Features**: Channel-specific filtering, rate calculations, visual breakdown
 - **Tests**: 15 passing tests
 
-#### 5. **Counter Insights** (POS Top Items & Payments)
-- **Route**: `/counter`
-- **KPIs**: Total Counter Orders, Top Item, Payment Methods
-- **Tables**: Top 15 items by frequency with counts and percentages, Payment method breakdown
-- **Features**: Item trend analysis, payment mix visualization, detail modal for item history
+#### 5. **Channel Insights** (Multi-channel Items & Payments)
+- **Route**: `/counter-insights`
+- **KPIs**: Total Orders, Total Revenue, Avg Order Value, Top Item
+- **Tables**: Top 15 items by frequency with counts and percentages, Payment method breakdown, Per-channel comparison metrics
+- **Features**: Multi-channel selection toggle, Item trend analysis, payment mix visualization, detail modal for item history, daily revenue multi-line trend by channel
 - **Tests**: 16 passing tests
 
 #### 6. **Order Journal** (Paginated Order History)
@@ -383,10 +383,11 @@ The Phase 3 implementation expands the SvelteKit web stack with 8 fully-featured
 
 #### 10. **Promo Impact** (Discount Analysis)
 - **Route**: `/promo`
-- **KPIs**: Orders with Promo, Total Discount Value, Total Orders Analyzed
-- **Analysis**: Discount distribution across 4 buckets (0-100, 100-250, 250-500, 500+)
+- **KPIs**: Orders with Promo, Total Discount Value, AOV Lift (Impact), Promo Orders Revenue
+- **Analysis**: Discount distribution across 4 buckets, Promo vs Non-Promo AOV comparison
+- **Charts**: Discount Distribution (bar), Discount Value by Channel (donut), AOV Comparison (bar), Promo Order Volume Trend (area)
 - **Display**: Distribution table with order counts, penetration %, averages
-- **Insights**: Penetration rate analysis, top bucket identification, discount impact metrics
+- **Insights**: Penetration rate analysis, top bucket identification, before/after impact of discounts on cart size
 - **Features**: Bucket categorization, insight generation, correlation analysis
 - **Tests**: 6 passing tests
 

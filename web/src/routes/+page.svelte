@@ -24,9 +24,26 @@
 	let { data } = $props();
 	const kpis = $derived(data.kpis);
 	const charts = $derived(data.charts);
+	const monthlySummary = $derived(data.monthlySummary || []);
+	const monthlyDetails = $derived(data.monthlyDetails || {});
 
 	// Dynamic channel configuration from layout data
 	const channels = $derived(page.data.channels || []);
+
+	// Modal State
+	let selectedMonthKey = $state<string | null>(null);
+	let selectedMonthData = $derived(selectedMonthKey ? monthlyDetails[selectedMonthKey] : null);
+
+	function openMonthDetails(index: number) {
+		const monthKey = monthlySummary[index]?.monthKey;
+		if (monthKey) {
+			selectedMonthKey = monthKey;
+		}
+	}
+
+	function closeModal() {
+		selectedMonthKey = null;
+	}
 
 	let isSyncing = $state(false);
 	let syncMessage = $state('');
@@ -224,6 +241,7 @@
 				<RevenueTrendsChart
 					categories={charts.revenueTrends.categories}
 					series={charts.revenueTrends.series}
+					onMonthClick={openMonthDetails}
 				/>
 			</div>
 			<div class="side-chart">
@@ -240,6 +258,7 @@
 				<ProfitLossChart
 					categories={charts.pnlTrends.categories}
 					series={charts.pnlTrends.series}
+					onMonthClick={openMonthDetails}
 				/>
 			</div>
 			<div class="side-chart">
@@ -249,6 +268,46 @@
 				/>
 			</div>
 		</div>
+
+		<!-- Monthly Summary Table -->
+		{#if monthlySummary.length > 0}
+			<div class="card table-card">
+				<h3>Monthly Summary</h3>
+				<p class="subtitle" style="margin-bottom: 1rem;">Revenue, expenses, and profit over time</p>
+				<div class="table-container">
+					<table>
+						<thead>
+							<tr>
+								<th>Month</th>
+								<th class="text-right">Orders</th>
+								<th class="text-right">Revenue</th>
+								<th class="text-right">Expenses</th>
+								<th class="text-right">Net Profit</th>
+								<th class="text-center">Action</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each monthlySummary as month, idx}
+								<tr>
+									<td class="font-bold">{month.label}</td>
+									<td class="text-right">{month.orders.toLocaleString('en-IN')}</td>
+									<td class="text-right">{formatCurrency(month.revenue * 100000, '₹')}</td>
+									<td class="text-right">{formatCurrency(month.expenses * 100000, '₹')}</td>
+									<td class="text-right font-bold" style:color={month.profit >= 0 ? '#10b981' : '#ef4444'}>
+										{formatCurrency(month.profit * 100000, '₹')}
+									</td>
+									<td class="text-center">
+										<button class="action-btn" onclick={() => openMonthDetails(idx)}>
+											Details
+										</button>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		{/if}
 
 		<!-- Row 5: Hourly Velocity, Weekly Performance, Monthly Contribution -->
 		<div class="charts-grid-3">
@@ -273,6 +332,70 @@
 		</div>
 	</div>
 </div>
+
+<!-- Month Detail Modal -->
+{#if selectedMonthData}
+	<div class="modal-overlay" onclick={closeModal}>
+		<div class="modal card" onclick={(e) => e.stopPropagation()}>
+			<div class="modal-header">
+				<div>
+					<h2>{selectedMonthData.label} Summary</h2>
+					<p class="subtitle" style="margin-bottom: 0;">Detailed breakdown of revenue and expenses</p>
+				</div>
+				<button class="close-btn" onclick={closeModal}>&times;</button>
+			</div>
+			
+			<div class="modal-body">
+				<div class="modal-kpis">
+					<div class="m-kpi">
+						<span class="label">Orders</span>
+						<span class="value">{selectedMonthData.orders.toLocaleString('en-IN')}</span>
+					</div>
+					<div class="m-kpi">
+						<span class="label">Net Profit</span>
+						<span class="value" style:color={selectedMonthData.profit >= 0 ? '#10b981' : '#ef4444'}>
+							{formatCurrency(selectedMonthData.profit * 100000, '₹')}
+						</span>
+					</div>
+				</div>
+
+				<div class="modal-split">
+					<div class="modal-section">
+						<h3>Revenue by Channel</h3>
+						<div class="breakdown-list">
+							{#each Object.entries(selectedMonthData.channels || {}) as [channel, value]}
+								<div class="breakdown-item">
+									<span class="name">{channel}</span>
+									<span class="val font-bold">{formatCurrency((value as number) * 100000, '₹')}</span>
+								</div>
+							{/each}
+							<div class="breakdown-total">
+								<span>Total Revenue</span>
+								<span class="font-bold text-accent">{formatCurrency(selectedMonthData.revenueTotal * 100000, '₹')}</span>
+							</div>
+						</div>
+					</div>
+
+					<div class="modal-section">
+						<h3>Expenses by Category</h3>
+						<div class="breakdown-list">
+							{#each Object.entries(selectedMonthData.expenseCategories || {}).sort((a,b) => (b[1] as number) - (a[1] as number)) as [category, value]}
+								<div class="breakdown-item">
+									<span class="name">{category}</span>
+									<span class="val font-bold">{formatCurrency((value as number) * 100000, '₹')}</span>
+								</div>
+							{/each}
+							<div class="breakdown-total">
+								<span>Total Expenses</span>
+								<span class="font-bold text-danger">{formatCurrency(selectedMonthData.expenseTotal * 100000, '₹')}</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.overview-container {
@@ -447,12 +570,57 @@
 	.charts-grid-3 {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-		gap: 1.5rem;
+		font-weight: 600;
 	}
+	
+	/* Table Styles */
+	.table-card { padding: 1.5rem 2rem; }
+	.table-card h3 { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem; }
+	.table-container { overflow-x: auto; }
+	table { width: 100%; border-collapse: collapse; text-align: left; }
+	th, td { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); }
+	th { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; background-color: rgba(0, 0, 0, 0.02); }
+	:global([data-theme='dark']) th { background-color: rgba(255, 255, 255, 0.02); }
+	tr:last-child td { border-bottom: none; }
+	.text-right { text-align: right; }
+	.text-center { text-align: center; }
+	.font-bold { font-weight: 700; }
+	.action-btn { padding: 0.4rem 0.8rem; border-radius: 0.25rem; border: 1px solid var(--border-color); background: transparent; color: var(--accent-primary); font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+	.action-btn:hover { background: var(--bg-secondary); border-color: var(--accent-primary); }
 
-	@media (max-width: 1024px) {
-		.charts-row {
+	/* Modal Styles */
+	.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeIn 0.2s ease; }
+	@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+	.modal { width: 95%; max-width: 700px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); animation: slideIn 0.3s ease; display: flex; flex-direction: column; }
+	@keyframes slideIn { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+	.modal-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 1.5rem 2rem; border-bottom: 1px solid var(--border-color); background: var(--bg-surface); position: sticky; top: 0; z-index: 10; }
+	.modal-header h2 { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.25rem 0; }
+	.close-btn { background: var(--bg-secondary); border: 1px solid var(--border-color); font-size: 1.25rem; border-radius: 50%; color: var(--text-secondary); cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
+	.close-btn:hover { color: var(--text-primary); background: var(--border-color); }
+	.modal-body { padding: 2rem; }
+	.modal-kpis { display: flex; gap: 1.5rem; margin-bottom: 2rem; }
+	.m-kpi { flex: 1; padding: 1rem 1.5rem; background: var(--bg-secondary); border-radius: var(--border-radius); border: 1px solid var(--border-color); display: flex; flex-direction: column; }
+	.m-kpi .label { color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 0.25rem; }
+	.m-kpi .value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
+	.modal-split { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+	.modal-section h3 { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem; }
+	.breakdown-list { display: flex; flex-direction: column; gap: 0.5rem; }
+	.breakdown-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border-radius: 0.25rem; }
+	.breakdown-item:hover { background: var(--bg-secondary); }
+	.breakdown-item .name { color: var(--text-secondary); font-size: 0.9rem; }
+	.breakdown-item .val { color: var(--text-primary); font-size: 0.9rem; }
+	.breakdown-total { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0.5rem 0.5rem; margin-top: 0.5rem; border-top: 1px dashed var(--border-color); font-weight: 600; }
+	.text-accent { color: var(--accent-primary); }
+	.text-danger { color: #ef4444; }
+
+	@media (max-width: 1200px) {
+		.charts-row,
+		.charts-grid-3 {
 			grid-template-columns: 1fr;
 		}
+	}
+	
+	@media (max-width: 768px) {
+		.modal-split { grid-template-columns: 1fr; }
 	}
 </style>

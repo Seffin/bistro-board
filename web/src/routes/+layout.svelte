@@ -41,7 +41,7 @@
 	const navItems = [
 		{ label: 'Overview', href: '/', icon: LayoutDashboard },
 		{ label: 'Platform Economics', href: '/economics', icon: TrendingUp },
-		{ label: 'Counter Insights', href: '/counter-insights', icon: ChefHat },
+		{ label: 'Channel Insights', href: '/counter-insights', icon: ChefHat },
 		{ label: 'Order Journal', href: '/orders', icon: ScrollText },
 		{ label: 'Business Ledger', href: '/ledger', icon: BookOpen },
 		{ label: 'Reconciliation', href: '/reconciliation', icon: GitCompare },

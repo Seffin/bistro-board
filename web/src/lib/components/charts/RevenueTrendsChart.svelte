@@ -4,9 +4,10 @@
 	import { themeState } from '$lib/stores/theme.svelte';
 	import { onMount } from 'svelte';
 
-	let { categories = [], series = [] } = $props<{
+	let { categories = [], series = [], onMonthClick } = $props<{
 		categories: string[];
 		series: { name: string; data: number[]; color: string }[];
+		onMonthClick?: (index: number) => void;
 	}>();
 
 	let chartNode: HTMLElement;
@@ -29,7 +30,12 @@
 				chart: {
 					...baseOptions.chart,
 					type: 'area',
-					height: 350
+					height: 350,
+					events: {
+						dataPointSelection: (e: any, chart: any, config: any) => {
+							if (onMonthClick) onMonthClick(config.dataPointIndex);
+						}
+					}
 				},
 				series,
 				xaxis: {
