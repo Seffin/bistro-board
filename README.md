@@ -7,6 +7,7 @@ A pluggable, configuration-driven business analytics dashboard for multi-channel
 ## 📂 Directory Layout
 
 * **`web/`**: SvelteKit application — the sole frontend and backend.
+* **`web/scripts/`**: Migration, seed, and diagnostic scripts (e.g., migrate-data, check-rows, seed-channels).
 * **`sales_reports/`**: Excel report landing directories:
   * `counter/`: Daily register sheets from POS.
   * `swiggy/`: Weekly settlement annexure files.
@@ -64,8 +65,9 @@ npm run db:push
 
 ## 📊 Features
 
-- **Executive Dashboard**: KPIs, revenue trends, channel mix, P&L, expenses, hourly velocity, weekly performance, monthly summary with click-through drill-downs
+- **Executive Dashboard**: KPIs, revenue trends, channel mix, P&L, expenses, hourly velocity, weekly performance, monthly summary, and POS vs Ledger variance analysis
 - **Detailed Analytics**: Platform Economics, Channel Insights (Multi-Channel), Order Journal, Business Ledger, Reconciliation, Payout Analytics, Promo Impact (Before/After analysis)
+- **Responsive Design**: Fully optimized for mobile and tablet with an off-canvas drawer navigation and collapsing grids
 - **Settings UI**: Channel CRUD, manual file upload, credential management
 - **Authentication**: Session-based login with bcrypt password hashing
 - **Caching**: In-memory TTL cache for expensive dashboard queries
