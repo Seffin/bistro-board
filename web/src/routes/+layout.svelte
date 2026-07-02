@@ -5,6 +5,8 @@
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import UserDropdown from '$lib/components/UserDropdown.svelte';
 	import {
+		Menu,
+		X,
 		LayoutDashboard,
 		TrendingUp,
 		ChefHat,
@@ -21,6 +23,11 @@
 	let { children, data } = $props();
 
 	let isAuthPage = $derived(page.url.pathname === '/login' || page.url.pathname === '/register');
+	let isSidebarOpen = $state(false);
+
+	function closeSidebar() {
+		isSidebarOpen = false;
+	}
 
 	/** Build href preserving current search params */
 	function navHref(path: string) {
@@ -75,12 +82,35 @@
 	</div>
 {:else}
 	<div class="app-container">
+		<!-- Mobile Topbar -->
+		<div class="mobile-topbar">
+			<button class="menu-btn" onclick={() => isSidebarOpen = true} aria-label="Open Menu">
+				<Menu size={24} />
+			</button>
+			<span class="brand-name">Philos</span>
+			<div style="width: 24px;"></div> <!-- Spacer to balance flex -->
+		</div>
+
+		<!-- Overlay -->
+		{#if isSidebarOpen}
+			<!-- svelte-ignore a11y_click_events_have_key_events -->
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div class="sidebar-overlay" onclick={closeSidebar}></div>
+		{/if}
+
 		<!-- Sidebar -->
-		<aside class="sidebar">
+		<aside class="sidebar {isSidebarOpen ? 'open' : ''}">
 			<!-- Branding -->
 			<div class="brand">
-				<span class="brand-name">Philos</span>
-				<span class="brand-sub">Delicacy & Analytics</span>
+				<div style="display: flex; justify-content: space-between; align-items: center;">
+					<div>
+						<span class="brand-name">Philos</span>
+						<span class="brand-sub">Delicacy & Analytics</span>
+					</div>
+					<button class="close-sidebar-btn" onclick={closeSidebar} aria-label="Close Menu">
+						<X size={20} />
+					</button>
+				</div>
 			</div>
 
 			<!-- Main Navigation -->
@@ -91,6 +121,7 @@
 						href={navHref(item.href)}
 						class="nav-item"
 						class:active={isActive(item.href)}
+						onclick={closeSidebar}
 					>
 						<svelte:component this={item.icon} size={18} />
 						<span>{item.label}</span>
@@ -103,6 +134,7 @@
 						<a
 							href={getChannelUrl(channel.id)}
 							class="nav-item channel-item"
+							onclick={closeSidebar}
 						>
 							<span class="channel-dot" style:background-color={channel.color}></span>
 							<span>{channel.name}</span>
@@ -111,7 +143,7 @@
 				{/if}
 
 				<div class="nav-section-label">System</div>
-				<a href="/settings" class="nav-item" class:active={isActive('/settings')}>
+				<a href="/settings" class="nav-item" class:active={isActive('/settings')} onclick={closeSidebar}>
 					<Settings size={18} />
 					<span>Settings</span>
 				</a>
@@ -305,5 +337,84 @@
 		max-width: 1600px;
 		margin: 0 auto;
 		width: 100%;
+	}
+
+	/* ── Mobile & Responsive ── */
+	.mobile-topbar {
+		display: none;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.75rem 1rem;
+		background: var(--bg-surface);
+		border-bottom: 1px solid var(--border-color);
+		flex-shrink: 0;
+	}
+
+	.menu-btn, .close-sidebar-btn {
+		background: none;
+		border: none;
+		color: var(--text-secondary);
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.25rem;
+		border-radius: var(--border-radius-sm);
+	}
+	
+	.menu-btn:hover, .close-sidebar-btn:hover {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+	}
+
+	.close-sidebar-btn {
+		display: none;
+	}
+
+	.sidebar-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.4);
+		backdrop-filter: blur(2px);
+		z-index: 40;
+		animation: fadeIn 0.2s ease;
+	}
+	
+	@keyframes fadeIn {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+
+	@media (max-width: 1024px) {
+		.app-container {
+			flex-direction: column;
+		}
+
+		.mobile-topbar {
+			display: flex;
+		}
+
+		.sidebar {
+			position: fixed;
+			top: 0;
+			left: -280px;
+			width: 260px;
+			height: 100vh;
+			z-index: 50;
+			transition: transform 0.3s ease;
+			box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+		}
+
+		.sidebar.open {
+			transform: translateX(280px);
+		}
+
+		.close-sidebar-btn {
+			display: flex;
+		}
+
+		.page-content {
+			padding: 1rem;
+		}
 	}
 </style>

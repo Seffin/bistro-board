@@ -135,7 +135,7 @@
 		margin: 0 0.25rem;
 	}
 
-	.button-group {
+	.date-actions {
 		display: flex;
 		gap: 0.5rem;
 	}
@@ -160,13 +160,17 @@
 		background: color-mix(in srgb, var(--accent-secondary) 90%, black);
 	}
 
-	.btn-ghost {
+	.btn-icon {
 		background: transparent;
 		color: var(--text-secondary);
 		border: 1px solid var(--border-color);
+		padding: 0.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
-	.btn-ghost:hover {
+	.btn-icon:hover {
 		background: var(--bg-secondary);
 		color: var(--text-primary);
 	}
@@ -180,6 +184,7 @@
 		.date-picker-form {
 			flex-direction: column;
 			align-items: stretch;
+			width: 100%;
 		}
 
 		.date-inputs {
@@ -188,14 +193,19 @@
 
 		.simple-input {
 			flex: 1;
+			min-width: 0;
 		}
 
-		.button-group {
+		.date-actions {
 			width: 100%;
 		}
 
 		.btn {
 			flex: 1;
+		}
+		
+		.btn-icon {
+			flex: 0 0 auto;
 		}
 	}
 </style>
